@@ -10,6 +10,7 @@
 #include "tftp.h"
 #include "user.h"
 
+int id_counter = 0;
 char* directory;
 int port;
 int server_socket;
@@ -27,6 +28,9 @@ void* serve_user(void* args) {
 	#ifdef VERBOSE
 	printf("[Server-tt] Servo un nuovo utente.\n");
 	#endif
+
+	
+
 	return NULL;
 }
 
@@ -74,21 +78,23 @@ int main(int argc, char** argv) {
 		recvfrom(server_socket, buffer, MAX_REQ_LEN, 0,
 				 (struct sockaddr*)&client_addr, &client_addr_len);
 		if (get_opcode(buffer) == RRQ) {
-			// Suppongo che l'utente non stia gia' scaricando
 			#ifdef VERBOSE
 			printf("[Server] Ricevuta richiesta da un client.\n");
 			#endif
 			// Aggiungo un nuovo utente alla lista
 			new_user = malloc(sizeof(struct user));
+			new_user->id = id_counter++;
 			new_user->addr = malloc(sizeof(struct sockaddr));
 			memcpy(new_user->addr, &client_addr, sizeof(struct sockaddr));
 			pthread_cond_init(&new_user->acked, NULL);
+			new_user->filename = get_filename(buffer);
 			new_user->next = NULL;
 			if(add(&active_users, new_user)) {
 				#ifdef VERBOSE
 				printf("[Server] Errore inserimento utente in lista.\n");
 				#endif
 				deallocate(new_user);
+				id_counter--;
 				continue;
 			}
 			// Avvio un nuovo thread che gestira' l'invio col client
@@ -97,6 +103,7 @@ int main(int argc, char** argv) {
 				printf("[Server] Errore creazione nuovo thread.\n");
 				#endif
 				deallocate(new_user);
+				id_counter--;
 				continue;
 			}
 		} else { // Messaggio in nessun formato noto
