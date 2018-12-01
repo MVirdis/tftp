@@ -1,8 +1,10 @@
-void handle_req(int ssock) {
+#include "tftp.h"
 
-	char opcode[2];
-	socklen_t len;
-	struct sockaddr_in client_addr;
-	int quant;
-	
-} 
+#include <string.h>
+
+int get_message_type(char* message) {
+	short opcode = 0;
+	// Prelevo l'opcode
+	memcpy(&opcode, message, 2);
+	return (int)opcode;
+}
