@@ -12,4 +12,5 @@
 #define BIN_MODE "octet"
 
 int get_opcode(char* buff);
+char* get_filename(char* buff);
 void handle_req(int);
