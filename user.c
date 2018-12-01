@@ -24,5 +24,7 @@ void deallocate(struct user* user) {
 	if (!user) return;
 	if (user->addr)
 		free(user->addr);
+	if (user->filename)
+		free(user->filename);
 	free(user);
 }
