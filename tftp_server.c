@@ -68,6 +68,10 @@ int main(int argc, char** argv) {
 			#ifdef VERBOSE
 			printf("[Server] Ricevuta richiesta da un client.\n");
 			#endif
+		} else { // Messaggio in nessun formato noto
+			#ifdef VERBOSE
+			printf("[Server] Pacchetto sconosciuto da un client.\n");
+			#endif
 		}
 	}
 
