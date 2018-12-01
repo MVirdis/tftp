@@ -7,7 +7,7 @@ void init_transfer_list(transfer_list_t* list) {
 	*list = NULL;
 }
 
-int add(transfer_list_t* list, struct user* new_transfer) {
+int add(transfer_list_t* list, struct transfer* new_transfer) {
 	struct transfer* it;
 	if (list == NULL) return -1;
 	if (*list == NULL) {

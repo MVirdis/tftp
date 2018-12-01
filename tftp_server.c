@@ -20,7 +20,7 @@ socklen_t client_addr_len;
 struct sockaddr_in server_addr;
 char buffer[MAX_REQ_LEN];
 transfer_list_t active_transfers;
-struct user* new_user;
+struct transfer* new_transfer;
 pthread_t thread;
 
 void* handle_transfer(void* args) {
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 			printf("[Server] Ricevuta richiesta da un client.\n");
 			#endif
 			// Aggiungo un nuovo utente alla lista
-			new_transfer = malloc(sizeof(struct user));
+			new_transfer = malloc(sizeof(struct transfer));
 			new_transfer->id = id_counter++;
 			new_transfer->addr = malloc(sizeof(struct sockaddr));
 			memcpy(new_transfer->addr, &client_addr, sizeof(struct sockaddr));
