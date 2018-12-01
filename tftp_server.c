@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
 		client_addr_len = sizeof(struct sockaddr_in);
 		recvfrom(server_socket, buffer, MAX_REQ_LEN, 0,
 				 (struct sockaddr*)&client_addr, &client_addr_len);
-		if (get_message_type(buffer) == RRQ) {
+		if (get_opcode(buffer) == RRQ) {
 			// Suppongo che l'utente non stia gia' scaricando
 			#ifdef VERBOSE
 			printf("[Server] Ricevuta richiesta da un client.\n");
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
 		} else { // Messaggio in nessun formato noto
 			#ifdef VERBOSE
 			printf("[Server] Ricevuto pacchetto con opcode %d.\n",
-				   get_message_type(buffer));
+				   get_opcode(buffer));
 			#endif
 		}
 	}

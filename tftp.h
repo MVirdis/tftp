@@ -11,5 +11,5 @@
 #define TEXT_MODE "netascii"
 #define BIN_MODE "octet"
 
-int get_message_type(char* buff);
+int get_opcode(char* buff);
 void handle_req(int);
