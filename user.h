@@ -10,3 +10,4 @@ typedef struct user* user_list_t;
 
 void init_user_list(user_list_t* list);
 int add(user_list_t* list, struct user* new_user);
+void deallocate(struct user* user);
