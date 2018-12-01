@@ -13,6 +13,7 @@ int server_port;
 int sock;
 struct sockaddr_in server_addr;
 int sent;
+char test_message[24];
 
 int main(int argc, char** argv) {
 	// Controllo parametri client
@@ -41,7 +42,11 @@ int main(int argc, char** argv) {
 	// Creazione socket UDP
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-	sent = sendto(sock, "Hellooo", 8, 0,
+	uint16_t a = htons(1);
+	memcpy(test_message, &a, sizeof a);
+	strcpy(test_message + sizeof a, "FileTest.txt");
+	strcpy(test_message + sizeof a + 1+strlen("FileTest.txt"), "netascii");
+	sent = sendto(sock, test_message, 24, 0,
 				  (struct sockaddr*)&server_addr, sizeof server_addr);
 
 	close(sock);

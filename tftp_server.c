@@ -70,7 +70,8 @@ int main(int argc, char** argv) {
 			#endif
 		} else { // Messaggio in nessun formato noto
 			#ifdef VERBOSE
-			printf("[Server] Pacchetto sconosciuto da un client.\n");
+			printf("[Server] Ricevuto pacchetto con opcode %d.\n",
+				   get_message_type(buffer));
 			#endif
 		}
 	}
