@@ -1,28 +1,35 @@
-all: server client tftp link
+all: server client tftp user link
 
-all_verbose: server_verbose client_verbose tftp_verbose link	
+all_verbose: server_verbose client_verbose tftp_verbose user_verbose link
 
 link:
-	gcc tftp_server.o tftp.o -o tftp_server
+	gcc tftp_server.o tftp.o user.o -o tftp_server
 	gcc tftp_client.o tftp.o -o tftp_client
+	rm -f *.o
 
 server:
-	gcc -Wall tftp_server.c -lpthread -c tftp_server.c
+	gcc -Wall -lpthread -c tftp_server.c
 
 server_verbose:
-	gcc -DVERBOSE -Wall tftp_server.c -lpthread -c tftp_server.c
+	gcc -DVERBOSE -Wall -lpthread -c tftp_server.c
 
 client:
-	gcc -Wall tftp_client.c -c tftp_client.c
+	gcc -Wall -c tftp_client.c
 
 client_verbose:
-	gcc -DVERBOSE -Wall tftp_client.c -c tftp_client.c
-
-tftp_verbose:
-	gcc -DVERBOSE -Wall tftp.c -c tftp.c
+	gcc -DVERBOSE -Wall -c tftp_client.c
 
 tftp:
-	gcc -Wall tftp.c -c tftp.c
+	gcc -Wall -c tftp.c
+
+tftp_verbose:
+	gcc -DVERBOSE -Wall -c tftp.c
+
+user:
+	gcc -Wall -lpthread -c user.c
+
+user_verbose:
+	gcc -Wall -lpthread -DVERBOSE -c user.c
 
 edit_all:
 	gedit * & >/dev/null
