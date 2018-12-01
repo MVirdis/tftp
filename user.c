@@ -1,6 +1,7 @@
 #include "user.h"
 
 #include <pthread.h>
+#include <stdlib.h>
 
 void init_user_list(user_list_t* list) {
 	*list = NULL;
