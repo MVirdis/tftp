@@ -19,6 +19,16 @@ socklen_t client_addr_len;
 struct sockaddr_in server_addr;
 char buffer[MAX_REQ_LEN];
 user_list_t active_users;
+struct user* new_user;
+pthread_t thread;
+
+void* serve_user(void* args) {
+	struct user* new_user = (struct user*) args;
+	#ifdef VERBOSE
+	printf("[Server-tt] Servo un nuovo utente.\n");
+	#endif
+	return NULL;
+}
 
 int main(int argc, char** argv) {
 	// Inizializzo la lista degli utenti
@@ -68,6 +78,27 @@ int main(int argc, char** argv) {
 			#ifdef VERBOSE
 			printf("[Server] Ricevuta richiesta da un client.\n");
 			#endif
+			// Aggiungo un nuovo utente alla lista
+			new_user = malloc(sizeof(struct user));
+			new_user->addr = malloc(sizeof(struct sockaddr));
+			memcpy(new_user->addr, &client_addr, sizeof(struct sockaddr));
+			pthread_cond_init(&new_user->acked, NULL);
+			new_user->next = NULL;
+			if(add(&active_users, new_user)) {
+				#ifdef VERBOSE
+				printf("[Server] Errore inserimento utente in lista.\n");
+				#endif
+				deallocate(new_user);
+				continue;
+			}
+			// Avvio un nuovo thread che gestira' l'invio col client
+			if(pthread_create(&thread, NULL, serve_user, (void*)new_user)) {
+				#ifdef VERBOSE
+				printf("[Server] Errore creazione nuovo thread.\n");
+				#endif
+				deallocate(new_user);
+				continue;
+			}
 		} else { // Messaggio in nessun formato noto
 			#ifdef VERBOSE
 			printf("[Server] Ricevuto pacchetto con opcode %d.\n",
