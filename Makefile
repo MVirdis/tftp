@@ -3,7 +3,7 @@ all: server client tftp user link
 all_verbose: server_verbose client_verbose tftp_verbose user_verbose link
 
 link:
-	gcc tftp_server.o tftp.o user.o -o tftp_server
+	gcc tftp_server.o tftp.o user.o -lpthread -o tftp_server
 	gcc tftp_client.o tftp.o -o tftp_client
 	rm -f *.o
 
