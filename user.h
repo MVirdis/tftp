@@ -1,6 +1,7 @@
 #include <pthread.h>
 
 struct user {
+	int id;
 	struct sockaddr* addr;
 	char* filename;
 	pthread_cond_t acked;
