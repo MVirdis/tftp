@@ -8,7 +8,7 @@
 #include <pthread.h>
 
 #include "tftp.h"
-#include "user.h"
+#include "transfer.h"
 
 int id_counter = 0;
 char* directory;
@@ -19,12 +19,12 @@ struct sockaddr_in client_addr;
 socklen_t client_addr_len;
 struct sockaddr_in server_addr;
 char buffer[MAX_REQ_LEN];
-user_list_t active_users;
+transfer_list_t active_transfers;
 struct user* new_user;
 pthread_t thread;
 
-void* serve_user(void* args) {
-	struct user* new_user = (struct user*) args;
+void* handle_transfer(void* args) {
+	struct transfer* new_transfer = (struct transfer*) args;
 	#ifdef VERBOSE
 	printf("[Server-tt] Servo un nuovo utente.\n");
 	#endif
@@ -36,7 +36,7 @@ void* serve_user(void* args) {
 
 int main(int argc, char** argv) {
 	// Inizializzo la lista degli utenti
-	init_user_list(&active_users);
+	init_transfer_list(&active_transfers);
 
 	// Controllo parametri server
 	if(argc < 2) {
@@ -82,27 +82,27 @@ int main(int argc, char** argv) {
 			printf("[Server] Ricevuta richiesta da un client.\n");
 			#endif
 			// Aggiungo un nuovo utente alla lista
-			new_user = malloc(sizeof(struct user));
-			new_user->id = id_counter++;
-			new_user->addr = malloc(sizeof(struct sockaddr));
-			memcpy(new_user->addr, &client_addr, sizeof(struct sockaddr));
-			pthread_cond_init(&new_user->acked, NULL);
-			new_user->filename = get_filename(buffer);
-			new_user->next = NULL;
-			if(add(&active_users, new_user)) {
+			new_transfer = malloc(sizeof(struct user));
+			new_transfer->id = id_counter++;
+			new_transfer->addr = malloc(sizeof(struct sockaddr));
+			memcpy(new_transfer->addr, &client_addr, sizeof(struct sockaddr));
+			pthread_cond_init(&new_transfer->acked, NULL);
+			new_transfer->filename = get_filename(buffer);
+			new_transfer->next = NULL;
+			if(add(&active_transfers, new_transfer)) {
 				#ifdef VERBOSE
 				printf("[Server] Errore inserimento utente in lista.\n");
 				#endif
-				deallocate(new_user);
+				deallocate(new_transfer);
 				id_counter--;
 				continue;
 			}
 			// Avvio un nuovo thread che gestira' l'invio col client
-			if(pthread_create(&thread, NULL, serve_user, (void*)new_user)) {
+			if(pthread_create(&thread, NULL, handle_transfer, (void*)new_transfer)) {
 				#ifdef VERBOSE
 				printf("[Server] Errore creazione nuovo thread.\n");
 				#endif
-				deallocate(new_user);
+				deallocate(new_transfer);
 				id_counter--;
 				continue;
 			}

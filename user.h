@@ -1,15 +1,15 @@
 #include <pthread.h>
 
-struct user {
+struct transfer {
 	int id;
 	struct sockaddr* addr;
 	char* filename;
 	pthread_cond_t acked;
-	struct user* next;
+	struct transfer* next;
 };
 
-typedef struct user* user_list_t;
+typedef struct transfer* transfer_list_t;
 
-void init_user_list(user_list_t* list);
-int add(user_list_t* list, struct user* new_user);
-void deallocate(struct user* user);
+void init_transfer_list(transfer_list_t* list);
+int add(transfer_list_t* list, struct transfer* new_transfer);
+void deallocate(struct transfer* transfer);

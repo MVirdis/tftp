@@ -1,30 +1,30 @@
-#include "user.h"
+#include "transfer.h"
 
 #include <pthread.h>
 #include <stdlib.h>
 
-void init_user_list(user_list_t* list) {
+void init_transfer_list(transfer_list_t* list) {
 	*list = NULL;
 }
 
-int add(user_list_t* list, struct user* new_user) {
-	struct user* it;
+int add(transfer_list_t* list, struct user* new_transfer) {
+	struct transfer* it;
 	if (list == NULL) return -1;
 	if (*list == NULL) {
-		*list = new_user;
-		new_user->next = NULL;
+		*list = new_transfer;
+		new_transfer->next = NULL;
 		return 0;
 	}
 	for(it=*list; it->next; it=it->next); // Scorro fino all'ultimo
-	it->next = new_user;
+	it->next = new_transfer;
 	return 0;
 }
 
-void deallocate(struct user* user) {
-	if (!user) return;
-	if (user->addr)
-		free(user->addr);
-	if (user->filename)
-		free(user->filename);
-	free(user);
+void deallocate(struct transfer* transfer) {
+	if (!transfer) return;
+	if (transfer->addr)
+		free(transfer->addr);
+	if (transfer->filename)
+		free(transfer->filename);
+	free(transfer);
 }
