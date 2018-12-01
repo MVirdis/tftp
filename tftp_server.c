@@ -1,20 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "tftp.h"
+#include "user.h"
 
 char* directory;
 int port;
 int server_socket;
 int exit_status;
 struct sockaddr_in client_addr;
+socklen_t client_addr_len;
 struct sockaddr_in server_addr;
+char buffer[MAX_REQ_LEN];
+user_list_t active_users;
 
 int main(int argc, char** argv) {
+	// Inizializzo la lista degli utenti
+	init_user_list(&active_users);
+
 	// Controllo parametri server
 	if(argc < 2) {
 		printf("Errore parametri.\nChiamare con ./tftp_server <porta> <directory>\n");
@@ -32,6 +41,7 @@ int main(int argc, char** argv) {
 		printf("TFTP Port: %d\n", port);
 	#endif
 
+	// Inizializza struttura indirizzo server
 	memset(&server_addr, 0, sizeof(struct sockaddr_in));
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(port);
@@ -46,6 +56,19 @@ int main(int argc, char** argv) {
 		printf("Se si utilizza la porta di default eseguire il server da root.\n");
 		close(server_socket);
 		return 0;
+	}
+
+	while(1) {
+		// Ricevo un messaggio
+		client_addr_len = sizeof(struct sockaddr_in);
+		recvfrom(server_socket, buffer, MAX_REQ_LEN, 0,
+				 (struct sockaddr*)&client_addr, &client_addr_len);
+		if (get_message_type(buffer) == RRQ) {
+			// Suppongo che l'utente non stia gia' scaricando
+			#ifdef VERBOSE
+			printf("[Server] Ricevuta richiesta da un client.\n");
+			#endif
+		}
 	}
 
 	return 0;
