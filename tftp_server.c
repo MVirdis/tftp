@@ -50,8 +50,6 @@ void* handle_transfer(void* args) {
 
 	set_opcode(error_packet, ERROR);
 
-	
-
 	while(done < chunks && error == 0) {
 		if (done == chunks-1)
 			next_size = filesize-done*CHUNK_SIZE;
@@ -72,6 +70,7 @@ void* handle_transfer(void* args) {
 		#ifdef VERBOSE
 		printf("[Server-tt] Invio blocco %d/%d...\n", done+1, chunks);
 		#endif
+		// Suppongo che se riesco ad inviare almeno un byte allora li ho inviati tutti
 		if(sendto(server_socket, data_packet, DATA_HEADER_LEN+next_size, 0,
 			   new_transfer->addr, sizeof(struct sockaddr)) > 0) {
 			done++;
@@ -207,6 +206,9 @@ int main(int argc, char** argv) {
 				id_counter--;
 				continue;
 			}
+		} else if (get_opcode(buffer) == ACK) {
+			// Risveglio il thread che sta gestendo il mittente dell'ack
+			pthread_cond_signal(&(get_transfer_byaddr(active_transfers, &client_addr)->acked));
 		} else { // Messaggio in nessun formato noto
 			#ifdef VERBOSE
 			printf("[Server] Ricevuto pacchetto con opcode %d.\n",
