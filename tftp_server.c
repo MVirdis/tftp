@@ -31,7 +31,15 @@ void* handle_transfer(void* args) {
 	// Occupo il mutex
 	pthread_mutex_lock(&new_transfer->mutex);
 
-	filesize = get_file_size(new_transfer->filepath);
+	if ((filesize = get_file_size(new_transfer->filepath)) == -1) {
+		#ifdef VERBOSE
+		printf("[Server-tt] Errore file not found.\n");
+		#endif
+		set_errornumber(error_packet, FILE_NOT_FOUND);
+		set_errormessage(error_packet, "File not found.");
+		next_size = 16;
+		error = 1;
+	}
 	chunks = (int) (filesize/CHUNK_SIZE +
 					(filesize%CHUNK_SIZE == 0? 0:1));
 
@@ -42,14 +50,7 @@ void* handle_transfer(void* args) {
 
 	set_opcode(error_packet, ERROR);
 
-	if(chunks == 0) {
-		#ifdef VERBOSE
-		printf("[Server-tt] Errore file not found.\n");
-		#endif
-		set_errornumber(error_packet, FILE_NOT_FOUND);
-		set_errormessage(error_packet, "File not found.");
-		error = 1;
-	}
+	
 
 	while(done < chunks && error == 0) {
 		if (done == chunks-1)
@@ -63,6 +64,7 @@ void* handle_transfer(void* args) {
 							done*CHUNK_SIZE, next_size, new_transfer->filemode)) == -1) {
 			set_errornumber(error_packet, FILE_NOT_FOUND);
 			set_errormessage(error_packet, "File not found.");
+			next_size = 16;
 			error = 1;
 			break;
 		}
@@ -94,8 +96,8 @@ void* handle_transfer(void* args) {
 	}
 
 	remove_transfer(&active_transfers, new_transfer);
-	pthread_mutex_unlock(&new_transfer->mutex);
 
+	pthread_exit(NULL);
 	return NULL;
 }
 
