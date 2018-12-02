@@ -9,10 +9,10 @@ server_verbose:
 	gcc -Wall -lpthread -DVERBOSE tftp_server.c tftp.c file_utils.c transfer.c -o tftp_server
 
 client:
-	gcc -Wall tftp_client.c tftp.c -o tftp_client
+	gcc -Wall tftp_client.c tftp.c file_utils.c -o tftp_client
 
 client_verbose:
-	gcc -Wall tftp_client.c tftp.c -o tftp_client
+	gcc -Wall -DVERBOSE tftp_client.c tftp.c file_utils.c -o tftp_client
 
 tftp_test:
 	gcc -Wall -c tftp.c
