@@ -87,6 +87,9 @@ int main(int argc, char** argv) {
 				printf("Modo di trasferimento binario configurato\n");
 				strcpy(filemode, BIN_MODE);
 			}
+		} else if (strcmp(tok, QUIT) == 0) {
+			if (filemode != NULL) free(filemode);
+			break;
 		}
 	}
 
