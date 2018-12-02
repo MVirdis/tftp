@@ -5,7 +5,8 @@
 
 int get_file_size(char* filepath) {
 	struct stat info;
-	stat(filepath, &info);
+	if (stat(filepath, &info) == -1)
+		return -1;
 	return info.st_size;
 }
 
