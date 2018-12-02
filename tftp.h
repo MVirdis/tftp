@@ -23,6 +23,7 @@
 int get_opcode(char* buff);
 void set_opcode(char* buff, int opcode);
 char* get_filename(char* buff);
+char* get_filemode(char* buff);
 void set_blocknumber(char* buff, int num);
 void set_data(char* buff, char* data, int size);
 void set_errornumber(char* buff, int num);
