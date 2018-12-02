@@ -89,7 +89,7 @@ void* handle_transfer(void* args) {
 		printf("[Server-tt] si è verificato un errore durante il trasferimento %d.\n",
 			   new_transfer->id);
 		#endif
-		sendto(server_socket, error_packet, DATA_HEADER_LEN+next_size, 0,
+		sendto(server_socket, error_packet, ERROR_HEADER_LEN+next_size, 0,
 			   new_transfer->addr, sizeof(struct sockaddr));
 	}
 
