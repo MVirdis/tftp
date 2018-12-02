@@ -10,31 +10,43 @@
 #include "tftp.h"
 #include "transfer.h"
 
-int id_counter = 0;
-char* directory;
-int port;
 int server_socket;
-int exit_status;
-struct sockaddr_in client_addr;
-socklen_t client_addr_len;
-struct sockaddr_in server_addr;
-char buffer[MAX_REQ_LEN];
-transfer_list_t active_transfers;
-struct transfer* new_transfer;
-pthread_t thread;
 
 void* handle_transfer(void* args) {
 	struct transfer* new_transfer = (struct transfer*) args;
+	char data_packet[MAX_DATA_LEN];
 	#ifdef VERBOSE
 	printf("[Server-tt] Servo un nuovo utente.\n");
 	#endif
 
-	
+	// Numero di chunks
+	new_transfer->chunks = get_file_size(new_transfer->filepath)/CHUNK_SIZE;
+
+	do {
+		// Creo un pacchetto data con il blocco
+		set_opcode(&data_packet, DATA);
+		set_blocknumber(&data_packet, new_transfer->done);sendto(server_socket, &data_packet, );
+	} while(new_transfer->done < new_transfer->chunks);
 
 	return NULL;
 }
 
 int main(int argc, char** argv) {
+	// Variabili
+	int id_counter = 0;
+	char* directory;
+	char* filepath;
+	char* filename;
+	int port;
+	int exit_status;
+	struct sockaddr_in client_addr;
+	socklen_t client_addr_len;
+	struct sockaddr_in server_addr;
+	char buffer[MAX_REQ_LEN];
+	transfer_list_t active_transfers;
+	struct transfer* new_transfer;
+	pthread_t thread;
+
 	// Inizializzo la lista degli utenti
 	init_transfer_list(&active_transfers);
 
@@ -84,11 +96,21 @@ int main(int argc, char** argv) {
 			// Aggiungo un nuovo utente alla lista
 			new_transfer = malloc(sizeof(struct transfer));
 			new_transfer->id = id_counter++;
+			new_transfer->chunks = 0;
+			new_transfer->done = 0;
 			new_transfer->addr = malloc(sizeof(struct sockaddr));
 			memcpy(new_transfer->addr, &client_addr, sizeof(struct sockaddr));
 			pthread_cond_init(&new_transfer->acked, NULL);
-			new_transfer->filename = get_filename(buffer);
+			pthread_mutex_init(&new_transfer->mutex, NULL);
 			new_transfer->next = NULL;
+			new_transfer->filepath = malloc(strlen(directory) + strlen(new_transfer->filename) +1);
+			strcpy(new_transfer->filepath, directory);
+			filename = get_filename(buffer);
+			strcat(new_transfer->filepath, filename);
+			free(filename);
+			#ifdef VERBOSE
+			printf("[Server] Percorso file %s\n", filepath);
+			#endif
 			if(add(&active_transfers, new_transfer)) {
 				#ifdef VERBOSE
 				printf("[Server] Errore inserimento utente in lista.\n");
