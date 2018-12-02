@@ -1,6 +1,7 @@
 #define MAX_FILENAME_LEN 32
 #define MAX_MODE_LEN 9
 #define MAX_REQ_LEN (2+MAX_FILENAME_LEN+1+MAX_MODE_LEN+1)
+#define REQ_HEADER_LEN 2
 #define DATA_HEADER_LEN 4
 #define MAX_DATA_LEN 516
 #define MAX_ERROR_LEN MAX_DATA_LEN
@@ -24,6 +25,8 @@ int get_opcode(char* buff);
 void set_opcode(char* buff, int opcode);
 char* get_filename(char* buff);
 char* get_filemode(char* buff);
+void set_filename(char* buff, char* filename);
+void set_filemode(char* buff, char* filemode);
 void set_blocknumber(char* buff, int num);
 void set_data(char* buff, char* data, int size);
 void set_errornumber(char* buff, int num);

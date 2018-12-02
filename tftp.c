@@ -75,3 +75,18 @@ void set_errormessage(char* buff, char* message) {
 	if (buff == NULL || message == NULL) return;
 	strcpy(buff+ERROR_HEADER_LEN, message);
 }
+
+void set_filename(char* buff, char* filename) {
+	if (buff == NULL || filename == NULL) return;
+	if (get_opcode(buff) != RRQ && get_opcode(buff) != WRQ) return;
+	strcpy(buff+REQ_HEADER_LEN, filename);
+}
+
+void set_filemode(char* buff, char* filemode) {
+	int i;
+	if (buff == NULL || filemode == NULL) return;
+	if (get_opcode(buff) != RRQ && get_opcode(buff) != WRQ) return;
+	for(i=REQ_HEADER_LEN+1; i < MAX_REQ_LEN && buff[i] != '\0'; ++i);
+	++i;
+	strcpy(buff+i, filemode);
+}
