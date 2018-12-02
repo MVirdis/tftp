@@ -46,6 +46,15 @@ char* get_filename(char* buff) {
 	return filename;
 }
 
+int get_blocknumber(char* buff) {
+	uint16_t num;
+	if (buff == NULL) return -1;
+	if (get_opcode(buff) != ACK && get_opcode(buff) != DATA)
+		return -1;
+	memcpy(&num, buff+2, 2);
+	return (int) ntohs(num);
+}
+
 void set_blocknumber(char* buff, int num) {
 	uint16_t blocknum;
 	if(!buff) return;
@@ -89,4 +98,21 @@ void set_filemode(char* buff, char* filemode) {
 	for(i=REQ_HEADER_LEN+1; i < MAX_REQ_LEN && buff[i] != '\0'; ++i);
 	++i;
 	strcpy(buff+i, filemode);
+}
+
+char* get_data(char* buff) {
+	char* data;
+	if (buff == NULL) return NULL;
+	if (get_opcode(buff) != DATA) return NULL;
+	data = malloc(strlen(buff + DATA_HEADER_LEN) + 1);
+	strcpy(data, buff + DATA_HEADER_LEN);
+	return data;
+}
+
+int get_errornumber(char* buff) {
+	uint16_t error_num;
+	if (buff == NULL) return -1;
+	if (get_opcode(buff) != ERROR) return -1;
+	memcpy(&error_num, buff+2, 2);
+	return (int) ntohs(error_num);
 }
