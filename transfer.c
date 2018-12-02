@@ -24,7 +24,7 @@ void deallocate(struct transfer* transfer) {
 	if (!transfer) return;
 	if (transfer->addr)
 		free(transfer->addr);
-	if (transfer->filename)
-		free(transfer->filename);
+	if (transfer->filepath)
+		free(transfer->filepath);
 	free(transfer);
 }

@@ -2,8 +2,10 @@
 
 struct transfer {
 	int id;
+	int chunks;
+	int done;
 	struct sockaddr* addr;
-	char* filename;
+	char* filepath;
 	pthread_cond_t acked;
 	struct transfer* next;
 };
