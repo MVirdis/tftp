@@ -155,6 +155,10 @@ int main(int argc, char** argv) {
 					else mode = BIN;
 					// |DATA_HEADER|      DATA      |\0|					
 					block = get_blocknumber(buffer);
+					// Se si tratta del primo blocco stampo
+					if (block == 0)
+						printf("Trasferimento file in corso.\n");
+					printf("\rTrasferimento blocco %d", block);
 					// tok punta al nome locale del file
 					set_file_chunk(data, tok, block*CHUNK_SIZE, received-DATA_HEADER_LEN-1, mode);
 					free(data);
@@ -167,6 +171,8 @@ int main(int argc, char** argv) {
 						break;
 				}
 			}
+			printf("\nTrasferimento completato (%d/%d blocchi)\n", block+1, block+1);
+			printf("Salvataggio %s completato\n", tok);
 		}
 	}
 
