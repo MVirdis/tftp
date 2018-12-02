@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
 	int received;
 	int error_number;
 	int mode;
-	int chunks;
+	int block;
 	
 	// Controllo parametri client
 	if(argc < 2) {
@@ -137,8 +137,7 @@ int main(int argc, char** argv) {
 			filename = get_filename(req_packet);
 			printf("Richiesta file %s al server in corso.\n", filename);
 			free(filename);
-			// Inizializzo il contatore di blocchi e il flag
-			chunks = 0;
+			block = -1;
 			// Ricevo un pacchetto di risposta alla richiesta
 			while(1) {
 				received = recv(sock, buffer, MAX_ERROR_LEN, 0);
@@ -152,14 +151,17 @@ int main(int argc, char** argv) {
 					break;
 				} else if (get_opcode(buffer) == DATA) {
 					data = get_data(buffer);
-					// tok punta al nome locale del file
 					if (strcmp(filemode, TEXT_MODE) == 0) mode = TEXT;
 					else mode = BIN;
-					// |DATA_HEADER|      DATA      |\0|
-					set_file_chunk(data, tok, chunks*CHUNK_SIZE, received-DATA_HEADER_LEN-1, mode);
+					// |DATA_HEADER|      DATA      |\0|					
+					block = get_blocknumber(buffer);
+					// tok punta al nome locale del file
+					set_file_chunk(data, tok, block*CHUNK_SIZE, received-DATA_HEADER_LEN-1, mode);
 					free(data);
-					chunks = get_blocknumber(buffer)+1;
-					// TODO Invio l'ack
+					// Preparo il pacchetto di ack
+					set_opcode(buffer, ACK);
+					set_blocknumber(buffer, block);
+					send(sock, buffer, ACK_LEN, 0); // Invio l'ack
 					// Se il campo data e' piu' piccolo di un blocco allora era l'ultimo
 					if (received-DATA_HEADER_LEN-1 < CHUNK_SIZE)
 						break;
