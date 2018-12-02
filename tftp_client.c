@@ -85,9 +85,12 @@ int main(int argc, char** argv) {
 			if (strcmp(tok, "txt") == 0) {
 				printf("Modo di trasferimento testuale configurato\n");
 				strcpy(filemode, TEXT_MODE);
-			} else {
+			} else if (strcmp(tok, "bin") == 0) {
 				printf("Modo di trasferimento binario configurato\n");
 				strcpy(filemode, BIN_MODE);
+			} else {
+				printf("Formato dell'istruzione mode errato\n");
+				printf("Utilizzo !mode {txt|bin}\n");
 			}
 		} else if (strcmp(tok, QUIT) == 0) {
 			if (filemode != NULL) free(filemode);
