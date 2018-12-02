@@ -40,3 +40,21 @@ void set_blocknumber(char* buff, int num) {
 	blocknum = (uint16_t) htons(num);
 	memcpy(buff+2, &blocknum, 2);
 }
+
+void set_data(char* buff, char* data, int size) {
+	if (buff == NULL || data == NULL) return;
+	if (size <= 0) return;
+	memcpy(buff+DATA_HEADER_LEN, data, size);
+}
+
+void set_errornumber(char* buff, int num) {
+	uint16_t errornum;
+	if(!buff) return;
+	if(num < 0) return;
+	errornum = (uint16_t) htons(num);
+	memcpy(buff+2, &errornum, 2);
+}
+void set_errormessage(char* buff, char* message) {
+	if (buff == NULL || message == NULL) return;
+	strcpy(buff+ERROR_HEADER_LEN, message);
+}
