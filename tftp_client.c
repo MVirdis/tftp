@@ -32,6 +32,8 @@ int main(int argc, char** argv) {
 	char command[MAX_CMD_LINE_LEN];
 	char* tok;
 	char* filemode;
+	char req_packet[MAX_REQ_LEN];
+	int filename_len;
 	
 	// Controllo parametri client
 	if(argc < 2) {
@@ -90,6 +92,36 @@ int main(int argc, char** argv) {
 		} else if (strcmp(tok, QUIT) == 0) {
 			if (filemode != NULL) free(filemode);
 			break;
+		} else if (strcmp(tok, GET) == 0) {
+			if (filemode == NULL) {
+				printf("Prima di richiedere un file settare la modalità "
+					   "attraverso il comando mode\n");
+				printf("Utilizzo !mode {txt|bin}\n");
+				continue;
+			}
+			set_opcode(req_packet, RRQ);
+			// Prelevo il filename
+			tok = strtok(NULL, " ");
+			if (tok == NULL) {
+				printf("Formato dell'istruzione get errato\n");
+				printf("Utilizzo !get filename nome_locale\n");
+				continue;
+			}
+			filename_len = strlen(tok);
+			set_filename(req_packet, tok);
+			set_filemode(req_packet, filemode);
+			tok = strtok(NULL, " ");
+			if (tok == NULL) {
+				printf("Formato dell'istruzione get errato\n");
+				printf("Utilizzo !get filename nome_locale\n");
+				continue;
+			}
+			if ((sendto(sock, req_packet, REQ_HEADER_LEN+filename_len+1+strlen(filemode)+1,
+				   0, (struct sockaddr*)&server_addr, sizeof server_addr)) <= 0) {
+				printf("Non è stato possibile inviare la richiesta\n");
+				continue;
+			}
+			printf("Richiesta inviata al server\n");
 		}
 	}
 
