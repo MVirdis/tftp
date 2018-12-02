@@ -13,6 +13,7 @@
 #define GET "!get"
 #define QUIT "!quit"
 #define MAX_CMD_LINE_LEN 64
+#define PROMPT "> "
 
 void print_menu() {
 	printf("\n\n\nSono disponibili i seguenti comandi:\n");
@@ -29,6 +30,8 @@ int main(int argc, char** argv) {
 	int sock;
 	struct sockaddr_in server_addr;
 	char command[MAX_CMD_LINE_LEN];
+	char* tok;
+	char* filemode;
 	
 	// Controllo parametri client
 	if(argc < 2) {
@@ -57,8 +60,15 @@ int main(int argc, char** argv) {
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 
 	print_menu();
+cmd_prompt:
+	printf(PROMPT);
 	fgets(command, MAX_CMD_LINE_LEN, stdin);
-	// TODO esecuzione comando
+	// Prelevo il primo token
+	tok = strtok(command, " ");
+	if (strcmp(tok, HELP) == 0) {
+		print_menu();
+		goto cmd_prompt;
+	}
 
 	close(sock);
 
