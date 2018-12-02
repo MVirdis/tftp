@@ -2,8 +2,6 @@
 
 struct transfer {
 	int id;
-	int chunks;
-	int done;
 	struct sockaddr* addr;
 	char* filepath;
 	pthread_cond_t acked;
