@@ -9,24 +9,83 @@
 
 #include "tftp.h"
 #include "transfer.h"
+#include "file_utils.h"
+
+#define min(a, b) (a<b ? a : b)
 
 int server_socket;
+transfer_list_t active_transfers;
 
 void* handle_transfer(void* args) {
 	struct transfer* new_transfer = (struct transfer*) args;
 	char data_packet[MAX_DATA_LEN];
+	char error_packet[MAX_ERROR_LEN];
+	char file_chunk[CHUNK_SIZE];
+	int chunks;
+	int filesize;
+	int done=0;
+	int next_size=0;
+	int error = 0;
 	#ifdef VERBOSE
 	printf("[Server-tt] Servo un nuovo utente.\n");
 	#endif
 
-	// Numero di chunks
-	new_transfer->chunks = get_file_size(new_transfer->filepath)/CHUNK_SIZE;
+	// Occupo il mutex
+	pthread_mutex_lock(&new_transfer->mutex);
 
-	do {
+	filesize = get_file_size(new_transfer->filepath);
+	chunks = (int) (filesize/CHUNK_SIZE +
+					(filesize%CHUNK_SIZE == 0? 0:1));
+
+	#ifdef VERBOSE
+	printf("[Server-tt] Inizio trasferimento %s in %d blocchi.\n",
+		   new_transfer->filepath, chunks);
+	#endif
+
+	set_opcode(error_packet, ERROR);
+
+	while(done < chunks) {
+		if (done == chunks-1)
+			next_size = filesize-done*CHUNK_SIZE;
+		else
+			next_size = CHUNK_SIZE;
 		// Creo un pacchetto data con il blocco
-		set_opcode(&data_packet, DATA);
-		set_blocknumber(&data_packet, new_transfer->done);sendto(server_socket, &data_packet, );
-	} while(new_transfer->done < new_transfer->chunks);
+		set_opcode(data_packet, DATA);
+		set_blocknumber(data_packet, done);
+		if ((get_file_chunk(file_chunk, new_transfer->filepath,
+							done*CHUNK_SIZE, next_size)) == -1) {
+			set_errornumber(error_packet, FILE_NOT_FOUND);
+			set_errormessage(error_packet, "File not found.");
+			error = 1;
+			break;
+		}
+		set_data(data_packet, file_chunk, next_size);
+		#ifdef VERBOSE
+		printf("[Server-tt] Invio blocco %d/%d...\n", done, chunks);
+		#endif
+		if(sendto(server_socket, data_packet, DATA_HEADER_LEN+next_size, 0,
+			   new_transfer->addr, sizeof(struct sockaddr)) > 0) {
+			done++;
+			pthread_cond_wait(&new_transfer->acked, &new_transfer->mutex);
+		}
+	}
+
+	remove_transfer(&active_transfers, new_transfer);
+
+	if (!error) {
+		#ifdef VERBOSE
+		printf("[Server-tt] trasferimento di %s completato.\n", new_transfer->filepath);
+		#endif
+	} else {
+		#ifdef VERBOSE
+		printf("[Server-tt] si è verificato un errore durante il trasferimento %d.\n",
+			   new_transfer->id);
+		#endif
+		sendto(server_socket, error_packet, DATA_HEADER_LEN+next_size, 0,
+			   new_transfer->addr, sizeof(struct sockaddr));
+	}
+
+	pthread_mutex_unlock(&new_transfer->mutex);
 
 	return NULL;
 }
@@ -37,13 +96,13 @@ int main(int argc, char** argv) {
 	char* directory;
 	char* filepath;
 	char* filename;
+	char paddr[INET_ADDRSTRLEN];
 	int port;
 	int exit_status;
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_len;
 	struct sockaddr_in server_addr;
 	char buffer[MAX_REQ_LEN];
-	transfer_list_t active_transfers;
 	struct transfer* new_transfer;
 	pthread_t thread;
 
@@ -90,26 +149,18 @@ int main(int argc, char** argv) {
 		recvfrom(server_socket, buffer, MAX_REQ_LEN, 0,
 				 (struct sockaddr*)&client_addr, &client_addr_len);
 		if (get_opcode(buffer) == RRQ) {
-			#ifdef VERBOSE
-			printf("[Server] Ricevuta richiesta da un client.\n");
-			#endif
+			// TODO controllare che l'utente non stia gia' scaricando
 			// Aggiungo un nuovo utente alla lista
-			new_transfer = malloc(sizeof(struct transfer));
-			new_transfer->id = id_counter++;
-			new_transfer->chunks = 0;
-			new_transfer->done = 0;
-			new_transfer->addr = malloc(sizeof(struct sockaddr));
-			memcpy(new_transfer->addr, &client_addr, sizeof(struct sockaddr));
-			pthread_cond_init(&new_transfer->acked, NULL);
-			pthread_mutex_init(&new_transfer->mutex, NULL);
-			new_transfer->next = NULL;
-			new_transfer->filepath = malloc(strlen(directory) + strlen(new_transfer->filename) +1);
-			strcpy(new_transfer->filepath, directory);
 			filename = get_filename(buffer);
-			strcat(new_transfer->filepath, filename);
-			free(filename);
+			filepath = malloc(strlen(directory) + strlen(filename) +1);
+			strcpy(filepath, directory);
+			strcat(filepath, filename);
+			new_transfer = create_transfer(id_counter++, (struct sockaddr*)&client_addr, filepath);
+			free(filename); // non serve più il nome file
 			#ifdef VERBOSE
-			printf("[Server] Percorso file %s\n", filepath);
+			inet_ntop(AF_INET, &client_addr.sin_addr, paddr, INET_ADDRSTRLEN);
+			printf("[Server] Ricevuta richiesta di download per %s da %s:%d \n",
+				   filepath, paddr, ntohs(client_addr.sin_port));
 			#endif
 			if(add(&active_transfers, new_transfer)) {
 				#ifdef VERBOSE
