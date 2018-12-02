@@ -8,13 +8,26 @@
 
 #include "tftp.h"
 
+#define HELP "!help"
+#define MODE "!mode"
+#define GET "!get"
+#define QUIT "!quit"
+
+void print_menu() {
+	printf("\n\n\nSono disponibili i seguenti comandi:\n");
+	printf("!help --> mostra l'elenco dei comandi disponibili\n");
+	printf("!mode {txt|bin} --> imposta il modo di trasferimento dei files (testo o binario)\n");
+	printf("!get filename nome_locale --> richiede al server il nome del file "
+		   "<filename> e lo salva localmente con il nome <nome_locale>\n");
+	printf("!quit --> termina il client\n");
+}
+
 int main(int argc, char** argv) {
 	char* server_ip;
 	int server_port;
 	int sock;
 	struct sockaddr_in server_addr;
-	int sent;
-	char test_message[24];
+	char commands[6];
 	
 	// Controllo parametri client
 	if(argc < 2) {
@@ -42,7 +55,9 @@ int main(int argc, char** argv) {
 	// Creazione socket UDP
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-
+	print_menu();
+	// TODO attesa inserimento comando
+	// TODO esecuzione comando
 
 	close(sock);
 
