@@ -60,8 +60,9 @@ int main(int argc, char** argv) {
 	printf("Porta Server: %d\n", server_port);
 	#endif
 
-	// filemode a NULL se non settato
-	filemode = NULL;
+	// filemode a BIN di default
+	filemode = malloc(10);
+	strcpy(filemode, BIN_MODE);
 
 	// Inizializza indirizzo server
 	memset(&server_addr, 0, sizeof server_addr);
@@ -92,7 +93,6 @@ int main(int argc, char** argv) {
 				printf("Utilizzo !mode {txt|bin}\n");
 				continue;
 			}
-			filemode = malloc(10);
 			if (strcmp(tok, "txt") == 0) {
 				printf("Modo di trasferimento testuale configurato\n");
 				strcpy(filemode, TEXT_MODE);
