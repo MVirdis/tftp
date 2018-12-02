@@ -6,6 +6,7 @@
 #define MAX_DATA_LEN 516
 #define MAX_ERROR_LEN MAX_DATA_LEN
 #define ERROR_HEADER_LEN 4
+#define ACK_LEN 4
 
 #define CHUNK_SIZE 512
 
