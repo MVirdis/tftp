@@ -32,3 +32,11 @@ char* get_filename(char* buff) {
 	strcpy(filename, field_filename);
 	return filename;
 }
+
+void set_blocknumber(char* buff, int num) {
+	uint16_t blocknum;
+	if(!buff) return;
+	if(num < 0) return;
+	blocknum = (uint16_t) htons(num);
+	memcpy(buff+2, &blocknum, 2);
+}

@@ -17,4 +17,4 @@
 int get_opcode(char* buff);
 void set_opcode(char* buff, int opcode);
 char* get_filename(char* buff);
-void handle_req(int);
+void set_blocknumber(char* buff, int num);
