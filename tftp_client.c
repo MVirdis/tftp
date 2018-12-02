@@ -12,6 +12,7 @@
 #define MODE "!mode"
 #define GET "!get"
 #define QUIT "!quit"
+#define MAX_CMD_LINE_LEN 64
 
 void print_menu() {
 	printf("\n\n\nSono disponibili i seguenti comandi:\n");
@@ -27,7 +28,7 @@ int main(int argc, char** argv) {
 	int server_port;
 	int sock;
 	struct sockaddr_in server_addr;
-	char commands[6];
+	char command[MAX_CMD_LINE_LEN];
 	
 	// Controllo parametri client
 	if(argc < 2) {
@@ -56,7 +57,7 @@ int main(int argc, char** argv) {
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 
 	print_menu();
-	// TODO attesa inserimento comando
+	fgets(command, MAX_CMD_LINE_LEN, stdin);
 	// TODO esecuzione comando
 
 	close(sock);
