@@ -8,14 +8,14 @@
 
 #include "tftp.h"
 
-char* server_ip;
-int server_port;
-int sock;
-struct sockaddr_in server_addr;
-int sent;
-char test_message[24];
-
 int main(int argc, char** argv) {
+	char* server_ip;
+	int server_port;
+	int sock;
+	struct sockaddr_in server_addr;
+	int sent;
+	char test_message[24];
+	
 	// Controllo parametri client
 	if(argc < 2) {
 		printf("Errore parametri.\nChiamare con ./tftp_client <IP server> <porta server>\n");
@@ -42,12 +42,7 @@ int main(int argc, char** argv) {
 	// Creazione socket UDP
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-	uint16_t a = htons(1);
-	memcpy(test_message, &a, sizeof a);
-	strcpy(test_message + sizeof a, "FileTest.txt");
-	strcpy(test_message + sizeof a + 1+strlen("FileTest.txt"), "netascii");
-	sent = sendto(sock, test_message, 24, 0,
-				  (struct sockaddr*)&server_addr, sizeof server_addr);
+
 
 	close(sock);
 
