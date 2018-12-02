@@ -7,6 +7,7 @@ struct transfer {
 	struct sockaddr* addr;
 	char* filepath;
 	pthread_cond_t acked;
+	pthread_mutex_t mutex;
 	struct transfer* next;
 };
 
