@@ -11,8 +11,6 @@
 #include "transfer.h"
 #include "file_utils.h"
 
-#define min(a, b) (a<b ? a : b)
-
 int server_socket;
 transfer_list_t active_transfers;
 
@@ -38,13 +36,22 @@ void* handle_transfer(void* args) {
 					(filesize%CHUNK_SIZE == 0? 0:1));
 
 	#ifdef VERBOSE
-	printf("[Server-tt] Inizio trasferimento %s in %d blocchi.\n",
-		   new_transfer->filepath, chunks);
+	printf("[Server-tt] Inizio trasferimento %s (%d bytes) in %d blocchi.\n",
+		   new_transfer->filepath, filesize, chunks);
 	#endif
 
 	set_opcode(error_packet, ERROR);
 
-	while(done < chunks) {
+	if(chunks == 0) {
+		#ifdef VERBOSE
+		printf("[Server-tt] Errore file not found.\n");
+		#endif
+		set_errornumber(error_packet, FILE_NOT_FOUND);
+		set_errormessage(error_packet, "File not found.");
+		error = 1;
+	}
+
+	while(done < chunks && error == 0) {
 		if (done == chunks-1)
 			next_size = filesize-done*CHUNK_SIZE;
 		else
@@ -53,7 +60,7 @@ void* handle_transfer(void* args) {
 		set_opcode(data_packet, DATA);
 		set_blocknumber(data_packet, done);
 		if ((get_file_chunk(file_chunk, new_transfer->filepath,
-							done*CHUNK_SIZE, next_size)) == -1) {
+							done*CHUNK_SIZE, next_size, new_transfer->filemode)) == -1) {
 			set_errornumber(error_packet, FILE_NOT_FOUND);
 			set_errormessage(error_packet, "File not found.");
 			error = 1;
@@ -61,18 +68,19 @@ void* handle_transfer(void* args) {
 		}
 		set_data(data_packet, file_chunk, next_size);
 		#ifdef VERBOSE
-		printf("[Server-tt] Invio blocco %d/%d...\n", done, chunks);
+		printf("[Server-tt] Invio blocco %d/%d...\n", done+1, chunks);
 		#endif
 		if(sendto(server_socket, data_packet, DATA_HEADER_LEN+next_size, 0,
 			   new_transfer->addr, sizeof(struct sockaddr)) > 0) {
 			done++;
+			#ifdef VERBOSE
+			printf("[Server-tt] Thread sospeso in attesa di ack.\n");
+			#endif
 			pthread_cond_wait(&new_transfer->acked, &new_transfer->mutex);
 		}
 	}
 
-	remove_transfer(&active_transfers, new_transfer);
-
-	if (!error) {
+	if (error == 0) {
 		#ifdef VERBOSE
 		printf("[Server-tt] trasferimento di %s completato.\n", new_transfer->filepath);
 		#endif
@@ -85,6 +93,7 @@ void* handle_transfer(void* args) {
 			   new_transfer->addr, sizeof(struct sockaddr));
 	}
 
+	remove_transfer(&active_transfers, new_transfer);
 	pthread_mutex_unlock(&new_transfer->mutex);
 
 	return NULL;
@@ -99,6 +108,7 @@ int main(int argc, char** argv) {
 	char paddr[INET_ADDRSTRLEN];
 	int port;
 	int exit_status;
+	int mode;
 	struct sockaddr_in client_addr;
 	socklen_t client_addr_len;
 	struct sockaddr_in server_addr;
@@ -152,16 +162,29 @@ int main(int argc, char** argv) {
 			// TODO controllare che l'utente non stia gia' scaricando
 			// Aggiungo un nuovo utente alla lista
 			filename = get_filename(buffer);
+			#ifdef VERBOSE
+			printf("[Server] Ricevuto nomefile: %s\n", filename);
+			#endif
 			filepath = malloc(strlen(directory) + strlen(filename) +1);
 			strcpy(filepath, directory);
 			strcat(filepath, filename);
-			new_transfer = create_transfer(id_counter++, (struct sockaddr*)&client_addr, filepath);
-			free(filename); // non serve più il nome file
+			#ifdef VERBOSE
+			printf("[Server] Calcolata directory: %s\n", filepath);
+			#endif
+			if (strcmp(get_filemode(buffer), TEXT_MODE) == 0)
+				mode = TEXT;
+			else
+				mode = BIN;
+			new_transfer = create_transfer(id_counter++, (struct sockaddr*)&client_addr, filepath, mode);
+			
 			#ifdef VERBOSE
 			inet_ntop(AF_INET, &client_addr.sin_addr, paddr, INET_ADDRSTRLEN);
-			printf("[Server] Ricevuta richiesta di download per %s da %s:%d \n",
-				   filepath, paddr, ntohs(client_addr.sin_port));
+			printf("[Server] Ricevuta richiesta di download per %s in modalità %s da %s:%d \n",
+				   filepath, get_filemode(buffer), paddr, ntohs(client_addr.sin_port));
 			#endif
+			// non serve più il nome file
+			free(filename);
+			free(filepath);
 			if(add(&active_transfers, new_transfer)) {
 				#ifdef VERBOSE
 				printf("[Server] Errore inserimento utente in lista.\n");
@@ -170,6 +193,9 @@ int main(int argc, char** argv) {
 				id_counter--;
 				continue;
 			}
+			#ifdef VERBOSE
+			print_transfer_list(active_transfers);
+			#endif
 			// Avvio un nuovo thread che gestira' l'invio col client
 			if(pthread_create(&thread, NULL, handle_transfer, (void*)new_transfer)) {
 				#ifdef VERBOSE
