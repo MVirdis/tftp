@@ -1,11 +1,11 @@
-#include "transfer.h"
-
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>
+
+#include "transfer.h"
 
 void init_transfer_list(transfer_list_t* list) {
 	*list = NULL;
@@ -75,4 +75,18 @@ void print_transfer_list(transfer_list_t list) {
 		printf("\tFilemode: %d\n", list->filemode);
 		printf("}\n");
 	}
+}
+
+struct transfer* get_transfer_byaddr(transfer_list_t list, struct sockaddr_in* addr) {
+	struct transfer* it;
+	struct sockaddr_in* it_addr;
+	if (list == NULL || addr == NULL) return NULL;
+	for(it=list; it; it=it->next) {
+		it_addr = (struct sockaddr_in*)&it->addr;
+		if (it_addr->sin_addr.s_addr == addr->sin_addr.s_addr && 
+			it_addr->sin_port == addr->sin_port)
+			break;
+	}
+	if (it == NULL) return NULL;
+	return it;
 }

@@ -1,5 +1,3 @@
-#include <pthread.h>
-
 struct transfer {
 	int id;
 	struct sockaddr* addr;
@@ -18,3 +16,4 @@ int add(transfer_list_t* list, struct transfer* new_transfer);
 void remove_transfer(transfer_list_t* list, struct transfer* target);
 void deallocate(struct transfer* transfer);
 void print_transfer_list(transfer_list_t list);
+struct transfer* get_transfer_byaddr(transfer_list_t list, struct sockaddr_in* addr);
