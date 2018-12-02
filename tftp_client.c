@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "tftp.h"
+#include "file_utils.h"
 
 #define HELP "!help"
 #define MODE "!mode"
@@ -32,8 +33,15 @@ int main(int argc, char** argv) {
 	char command[MAX_CMD_LINE_LEN];
 	char* tok;
 	char* filemode;
+	char* filename;
+	char* data;
 	char req_packet[MAX_REQ_LEN];
+	char buffer[MAX_ERROR_LEN];
 	int filename_len;
+	int received;
+	int error_number;
+	int mode;
+	int chunks;
 	
 	// Controllo parametri client
 	if(argc < 2) {
@@ -63,6 +71,9 @@ int main(int argc, char** argv) {
 
 	// Creazione socket UDP
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+	// Associo alla porta UDP l'indirizzo del server per comodita'
+	connect(sock, (struct sockaddr*)&server_addr, sizeof server_addr);
 
 	print_menu();
 	while(1) {
@@ -119,12 +130,41 @@ int main(int argc, char** argv) {
 				printf("Utilizzo !get filename nome_locale\n");
 				continue;
 			}
-			if ((sendto(sock, req_packet, REQ_HEADER_LEN+filename_len+1+strlen(filemode)+1,
-				   0, (struct sockaddr*)&server_addr, sizeof server_addr)) <= 0) {
+			if ((send(sock, req_packet, REQ_HEADER_LEN+filename_len+1+strlen(filemode)+1,0)) <= 0) {
 				printf("Non è stato possibile inviare la richiesta\n");
 				continue;
 			}
-			printf("Richiesta inviata al server\n");
+			filename = get_filename(req_packet);
+			printf("Richiesta file %s al server in corso.\n", filename);
+			free(filename);
+			// Inizializzo il contatore di blocchi e il flag
+			chunks = 0;
+			// Ricevo un pacchetto di risposta alla richiesta
+			while(1) {
+				received = recv(sock, buffer, MAX_ERROR_LEN, 0);
+				if (get_opcode(buffer) == ERROR) {
+					error_number = get_errornumber(buffer);
+					if (error_number == FILE_NOT_FOUND) {
+						printf("File non trovato.\n");
+					} else if (error_number == ILLEGAL_TFTP_OP) {
+						printf("Operazione tftp non valida.\n");
+					}
+					break;
+				} else if (get_opcode(buffer) == DATA) {
+					data = get_data(buffer);
+					// tok punta al nome locale del file
+					if (strcmp(filemode, TEXT_MODE) == 0) mode = TEXT;
+					else mode = BIN;
+					// |DATA_HEADER|      DATA      |\0|
+					set_file_chunk(data, tok, chunks*CHUNK_SIZE, received-DATA_HEADER_LEN-1, mode);
+					free(data);
+					chunks = get_blocknumber(buffer)+1;
+					// TODO Invio l'ack
+					// Se il campo data e' piu' piccolo di un blocco allora era l'ultimo
+					if (received-DATA_HEADER_LEN-1 < CHUNK_SIZE)
+						break;
+				}
+			}
 		}
 	}
 
