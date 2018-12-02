@@ -23,8 +23,8 @@ transfer_test:
 	rm -f transfer.o
 
 file_utils_test:
-	gcc -Wall -c transfer.c
-	rm -f transfer.o
+	gcc -Wall -c file_utils.c
+	rm -f file_utils.o
 
 edit_all:
 	gedit * & >/dev/null
