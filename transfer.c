@@ -21,6 +21,7 @@ int add(transfer_list_t* list, struct transfer* new_transfer) {
 	}
 	for(it=*list; it->next; it=it->next); // Scorro fino all'ultimo
 	it->next = new_transfer;
+	new_transfer->next = NULL;
 	return 0;
 }
 
@@ -80,11 +81,18 @@ void print_transfer_list(transfer_list_t list) {
 struct transfer* get_transfer_byaddr(transfer_list_t list, struct sockaddr_in* addr) {
 	struct transfer* it;
 	struct sockaddr_in* it_addr;
+	char paddr[INET_ADDRSTRLEN];
+	int port;
+	char it_paddr[INET_ADDRSTRLEN];
+	int it_port;
 	if (list == NULL || addr == NULL) return NULL;
+	inet_ntop(AF_INET, &addr->sin_addr, paddr, INET_ADDRSTRLEN);
+	port = ntohs(addr->sin_port);
 	for(it=list; it; it=it->next) {
-		it_addr = (struct sockaddr_in*)&it->addr;
-		if (it_addr->sin_addr.s_addr == addr->sin_addr.s_addr && 
-			it_addr->sin_port == addr->sin_port)
+		it_addr = (struct sockaddr_in*)it->addr;
+		inet_ntop(AF_INET, &it_addr->sin_addr, it_paddr, INET_ADDRSTRLEN);
+		it_port = ntohs(it_addr->sin_port);
+		if (strcmp(it_paddr, paddr) == 0 && port == it_port)
 			break;
 	}
 	if (it == NULL) return NULL;
