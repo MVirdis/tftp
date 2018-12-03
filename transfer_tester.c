@@ -48,6 +48,9 @@ int main() {
 	pthread_cond_signal(&new_transfer->acked);
 	pthread_mutex_unlock(&new_transfer->mutex);
 	sleep(1);
+	struct sockaddr_in* addr_c = (struct sockaddr_in*)new_transfer->addr;
+	inet_ntop(AF_INET, &addr_c->sin_addr, paddr, INET_ADDRSTRLEN);
+	printf("Address: %s\n", paddr);
 	if(new_transfer->filepath == NULL)
 		printf("create_transfer: X\n");
 	if(new_transfer->next != NULL)
@@ -55,7 +58,25 @@ int main() {
 
 	// Testo la add
 	add(&list, new_transfer);
-	
+	printf("Aggiungo il transfer alla lista\n");
+	print_transfer_list(list);
+
+	// Testo la get
+	struct transfer* res = NULL;
+	res = get_transfer_byaddr(list, (struct sockaddr_in*)&addr);
+	if (res == NULL)
+		printf("get_transfer_byaddr: X (risultato NULL)\n");
+	transfer_list_t second_list;
+	init_transfer_list(&second_list);
+	printf("Creazione seconda lista segue add\n");
+	add(&second_list, res);
+	printf("Uso la get per prelevare il transfer, segue stampa\n");
+	print_transfer_list(second_list);
+
+	// Testo la remove
+	remove_transfer(&list, new_transfer);
+	printf("Rimosso dalla lista segue la stampa\n");
+	print_transfer_list(list);
 
 	return 0;
 }
