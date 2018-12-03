@@ -21,6 +21,7 @@ tftp_test:
 transfer_test:
 	gcc -Wall -c transfer.c
 	rm -f transfer.o
+	gcc -Wall -lpthread transfer_tester.c transfer.c -o transfer_tester
 
 file_utils_test:
 	gcc -Wall -c file_utils.c
@@ -33,5 +34,6 @@ clean:
 	rm -f *.o
 	rm -f tftp_server
 	rm -f tftp_client
+	rm -f transfer_tester
 	clear
 
