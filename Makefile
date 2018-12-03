@@ -26,6 +26,7 @@ transfer_test:
 file_utils_test:
 	gcc -Wall -c file_utils.c
 	rm -f file_utils.o
+	gcc -Wall -lpthread file_utils_tester.c file_utils.c -o file_utils_tester
 
 edit_all:
 	gedit * & >/dev/null
