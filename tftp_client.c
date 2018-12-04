@@ -160,15 +160,18 @@ int main(int argc, char** argv) {
 						printf("Trasferimento file in corso.\n");
 					printf("\rTrasferimento blocco %d", block);
 					// tok punta al nome locale del file
-					set_file_chunk(data, tok, block*CHUNK_SIZE, received-DATA_HEADER_LEN-1, mode);
+					append_file_chunk(data, tok, received-DATA_HEADER_LEN, mode);
 					free(data);
 					// Preparo il pacchetto di ack
 					set_opcode(buffer, ACK);
 					set_blocknumber(buffer, block);
 					send(sock, buffer, ACK_LEN, 0); // Invio l'ack
 					// Se il campo data e' piu' piccolo di un blocco allora era l'ultimo
-					if (received-DATA_HEADER_LEN-1 < CHUNK_SIZE)
+					if (received-DATA_HEADER_LEN < CHUNK_SIZE)
 						break;
+				} else {
+					printf("Opcode errato\n");
+					break;
 				}
 			}
 			printf("\nTrasferimento completato (%d/%d blocchi)\n", block+1, block+1);
