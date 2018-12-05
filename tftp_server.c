@@ -32,6 +32,11 @@ void* handle_transfer(void* args) {
 	// Mutua esclusione su new_transfer
 	pthread_mutex_lock(&new_transfer->mutex);
 
+	#ifdef VERBOSE
+	addr = (struct sockaddr_in*)new_transfer->addr;
+	inet_ntop(AF_INET, &addr->sin_addr, paddr, INET_ADDRSTRLEN);
+	#endif
+
 	// Preparo l'opcode di errore
 	set_opcode(error_packet, ERROR);
 
@@ -49,10 +54,10 @@ void* handle_transfer(void* args) {
 	chunks = (int) (filesize/CHUNK_SIZE + (filesize%CHUNK_SIZE == 0? 0:1));
 
 	#ifdef VERBOSE
-	addr = (struct sockaddr_in*)new_transfer->addr;
-	inet_ntop(AF_INET, &addr->sin_addr, paddr, INET_ADDRSTRLEN);
-	printf("Inizio trasferimento di %s (%d bytes) in %d blocchi verso %s:%d.\n",
-		   new_transfer->filepath, filesize, chunks, paddr, ntohs(addr->sin_port));
+	if (error == 0) {
+		printf("Inizio trasferimento di %s (%d bytes) in %d blocchi verso %s:%d.\n",
+			   new_transfer->filepath, filesize, chunks, paddr, ntohs(addr->sin_port));
+	}
 	#endif
 
 	while(done < chunks && error == 0) {
