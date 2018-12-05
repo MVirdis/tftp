@@ -114,12 +114,6 @@ int main(int argc, char** argv) {
 			if (filemode != NULL) free(filemode);
 			break;
 		} else if (strcmp(tok, GET) == 0) {
-			if (filemode == NULL) {
-				printf("Prima di richiedere un file settare la modalità "
-					   "attraverso il comando mode\n");
-				printf("Utilizzo !mode {txt|bin}\n");
-				continue;
-			}
 			set_opcode(req_packet, RRQ);
 			// Prelevo il filename
 			tok = strtok(NULL, " ");
