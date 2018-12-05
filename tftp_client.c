@@ -122,16 +122,17 @@ int main(int argc, char** argv) {
 				printf("Utilizzo !get filename nome_locale\n");
 				continue;
 			}
-			filename_len = strlen(tok);
+			filename_len = strlen(tok); // tok contiene il filename
 			set_filename(req_packet, tok);
 			set_filemode(req_packet, filemode);
-			tok = strtok(NULL, " ");
+			tok = strtok(NULL, " "); // tok contiene il nome locale
 			if (tok == NULL) {
 				printf("Formato dell'istruzione get errato\n");
 				printf("Utilizzo !get filename nome_locale\n");
 				continue;
 			}
-			if ((send(sock, req_packet, REQ_HEADER_LEN+filename_len+1+strlen(filemode)+1,0)) <= 0) {
+			if ((send(sock, req_packet, REQ_HEADER_LEN+filename_len+1+strlen(filemode)+1,0)
+				 ) < REQ_HEADER_LEN+filename_len+1+strlen(filemode)+1) {
 				printf("Non è stato possibile inviare la richiesta\n");
 				continue;
 			}
@@ -141,6 +142,7 @@ int main(int argc, char** argv) {
 			block = -1;
 			// Ricevo un pacchetto di risposta alla richiesta
 			while(1) {
+				// La lunghezza del pacchetto che arriva sara' max(MAX_ERROR_LEN, ACK_LEN)
 				received = recv(sock, buffer, MAX_ERROR_LEN, 0);
 				if (get_opcode(buffer) == ERROR) {
 					error_number = get_errornumber(buffer);
@@ -168,15 +170,16 @@ int main(int argc, char** argv) {
 					set_blocknumber(buffer, block);
 					send(sock, buffer, ACK_LEN, 0); // Invio l'ack
 					// Se il campo data e' piu' piccolo di un blocco allora era l'ultimo
-					if (received-DATA_HEADER_LEN < CHUNK_SIZE)
+					if (received-DATA_HEADER_LEN < CHUNK_SIZE) {
+						printf("\nTrasferimento completato (%d/%d blocchi)\n", block+1, block+1);
+						printf("Salvataggio %s completato\n", tok);
 						break;
+					}
 				} else {
 					printf("Opcode errato\n");
 					break;
 				}
 			}
-			printf("\nTrasferimento completato (%d/%d blocchi)\n", block+1, block+1);
-			printf("Salvataggio %s completato\n", tok);
 		} else {
 			printf(GENERIC_ERROR_MSG);
 		}
