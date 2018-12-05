@@ -15,6 +15,7 @@
 #define QUIT "!quit"
 #define MAX_CMD_LINE_LEN 64
 #define PROMPT "> "
+#define GENERIC_ERROR_MSG "Comando non trovato. Usare !help per l'elenco dei comandi.\n"
 
 void print_menu() {
 	printf("\n\n\nSono disponibili i seguenti comandi:\n");
@@ -82,6 +83,12 @@ int main(int argc, char** argv) {
 		fgets(command, MAX_CMD_LINE_LEN, stdin);
 		// Rimuovo il carattere \n finale
 		command[strlen(command)-1] = '\0';
+
+		if (strlen(command) == 0) {
+			printf(GENERIC_ERROR_MSG);
+			continue;
+		}
+
 		// Prelevo il primo token
 		tok = strtok(command, " ");
 		if (strcmp(tok, HELP) == 0) {
@@ -176,6 +183,8 @@ int main(int argc, char** argv) {
 			}
 			printf("\nTrasferimento completato (%d/%d blocchi)\n", block+1, block+1);
 			printf("Salvataggio %s completato\n", tok);
+		} else {
+			printf(GENERIC_ERROR_MSG);
 		}
 	}
 
