@@ -207,8 +207,18 @@ int main(int argc, char** argv) {
 		} else if (get_opcode(buffer) == ACK) {
 			// Risveglio il thread che sta gestendo il mittente dell'ack
 			new_transfer = get_transfer_byaddr(active_transfers, &client_addr);
+
+			// Transfer non trovato puo' capitare se arriva un ack dopo che
+			// il trasferimento si e' chiuso con errore
+			if (new_transfer == NULL)
+				continue;
+
 			// Mutua esclusione sulla struttura new_transfer
 			pthread_mutex_lock(&new_transfer->mutex);
+			// Nel frattempo il transfer potrebbe essere stato rimosso dalla lista
+			new_transfer = get_transfer_byaddr(active_transfers, &client_addr);
+			if (new_transfer == NULL)
+				continue;
 			pthread_cond_signal(&new_transfer->acked); // Risveglio il thread
 			pthread_mutex_unlock(&new_transfer->mutex);
 		} else { // Messaggio in nessun formato accettabile
