@@ -1,40 +1,36 @@
-all: server client
+CFLAGS = -Wall
 
 all_verbose: server_verbose client_verbose
 
-server:
-	gcc -Wall -lpthread tftp_server.c tftp.c file_utils.c transfer.c -o tftp_server
+all: server client
 
-server_verbose:
-	gcc -Wall -lpthread -DVERBOSE tftp_server.c tftp.c file_utils.c transfer.c -o tftp_server
+server: tftp_server.o tftp.o file_utils.o transfer.o
+	gcc $(CFLAGS) -lpthread tftp_server.c tftp.c file_utils.c transfer.c -o tftp_server
 
-client:
-	gcc -Wall tftp_client.c tftp.c file_utils.c -o tftp_client
+server_verbose: tftp_server.o tftp.o file_utils.o transfer.o
+	gcc $(CFLAGS) -lpthread -DVERBOSE tftp_server.c tftp.c file_utils.c transfer.c -o tftp_server
 
-client_verbose:
-	gcc -Wall -DVERBOSE tftp_client.c tftp.c file_utils.c -o tftp_client
+client: tftp_client.o tftp.o file_utils.o
+	gcc $(CFLAGS) tftp_client.c tftp.c file_utils.c -o tftp_client
 
-tftp_test:
-	gcc -Wall -c tftp.c
-	rm -f tftp.o
+client_verbose: tftp_client.o tftp.o file_utils.o
+	gcc $(CFLAGS) -DVERBOSE tftp_client.c tftp.c file_utils.c -o tftp_client
 
-transfer_test:
-	gcc -Wall -c transfer.c
-	rm -f transfer.o
-	gcc -Wall -lpthread transfer_tester.c transfer.c -o transfer_tester
+tftp_server.o: tftp.h file_utils.h transfer.h
 
-file_utils_test:
-	gcc -Wall -c file_utils.c
-	rm -f file_utils.o
-	gcc -Wall -lpthread file_utils_tester.c file_utils.c -o file_utils_tester
+tftp_client.o: tftp.h file_utils.h
+
+tftp.o: tftp.h
+
+file_utils.o: file_utils.h
+
+transfer.o: transfer.h
 
 edit_all:
-	gedit * & >/dev/null
+	gedit *.? Makefile & >/dev/null
 
 clean:
 	rm -f *.o
 	rm -f tftp_server
 	rm -f tftp_client
-	rm -f transfer_tester
-	clear
 
