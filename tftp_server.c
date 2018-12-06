@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "tftp.h"
 #include "transfer.h"
@@ -13,6 +14,10 @@
 
 int server_socket;
 transfer_list_t active_transfers;
+
+void handle_kill(int sig) {
+	close(server_socket);
+}
 
 void* handle_transfer(void* args) {
 	struct transfer* new_transfer = (struct transfer*) args;
@@ -130,6 +135,9 @@ int main(int argc, char** argv) {
 	#ifdef VERBOSE
 	char paddr[INET_ADDRSTRLEN];
 	#endif
+
+	// Associo il gestore del segnale kill
+	signal(SIGKILL, handle_kill);
 
 	// Inizializzo la lista degli utenti
 	init_transfer_list(&active_transfers);
