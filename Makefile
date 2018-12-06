@@ -33,4 +33,4 @@ clean:
 	rm -f *.o
 	rm -f tftp_server
 	rm -f tftp_client
-
+	rm -f downloads/*
