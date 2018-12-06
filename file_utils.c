@@ -48,13 +48,15 @@ int set_file_chunk(char* data, char* filepath, int offset, int size, int mode) {
 
 int append_file_chunk(char* data, char* filepath, int size, int mode) {
 	FILE* stream;
+	int i;
 	if (data == NULL || filepath == NULL) return -1;
 	if ((size <= 0 && mode == BIN) || (mode != BIN && mode != TEXT)) return -1;
 	stream = fopen(filepath, "a");
 	if (mode == BIN)
 		fwrite(data, size, 1, stream);
 	else if (mode == TEXT)
-		fprintf(stream, "%s", data);
+		for(i=0; i<size; ++i)
+			fprintf(stream, "%c", data[i]);
 	fclose(stream);
 	return 0;
 }
