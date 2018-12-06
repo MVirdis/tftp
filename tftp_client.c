@@ -43,6 +43,7 @@ int main(int argc, char** argv) {
 	int error_number;
 	int mode;
 	int block;
+	int exit_status;
 	
 	// Controllo parametri client
 	if(argc < 2) {
@@ -74,8 +75,19 @@ int main(int argc, char** argv) {
 	// Creazione socket UDP
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 
+	if (sock == -1) {
+		printf("Errore nessun socket disponibile\n");
+		return 0;
+	}
+
 	// Associo alla porta UDP l'indirizzo del server per comodita'
-	connect(sock, (struct sockaddr*)&server_addr, sizeof server_addr);
+	exit_status = connect(sock, (struct sockaddr*)&server_addr, sizeof server_addr);
+
+	if (exit_status == -1) {
+		printf("Errore di connessione\n");
+		close(sock);
+		return 0;
+	}
 
 	print_menu();
 	while(1) {
