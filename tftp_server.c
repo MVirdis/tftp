@@ -29,26 +29,20 @@ void* handle_transfer(void* args) {
 	int done=0;
 	int next_size=0;
 	int error = 0;
-	#ifdef VERBOSE
 	char paddr[INET_ADDRSTRLEN];
 	struct sockaddr_in* addr;
-	#endif
 
 	// Mutua esclusione su new_transfer
 	pthread_mutex_lock(&new_transfer->mutex);
 
-	#ifdef VERBOSE
 	addr = (struct sockaddr_in*)new_transfer->addr;
 	inet_ntop(AF_INET, &addr->sin_addr, paddr, INET_ADDRSTRLEN);
-	#endif
 
 	// Preparo l'opcode di errore
 	set_opcode(error_packet, ERROR);
 
 	if ((filesize = get_file_size(new_transfer->filepath)) == -1) {
-		#ifdef VERBOSE
 		printf("Errore file not found.\n");
-		#endif
 		set_errornumber(error_packet, FILE_NOT_FOUND);
 		set_errormessage(error_packet, "File not found.");
 		next_size = 16;
@@ -58,12 +52,10 @@ void* handle_transfer(void* args) {
 	// Calcolo del numero di blocchi
 	chunks = (int) (filesize/CHUNK_SIZE + (filesize%CHUNK_SIZE == 0? 0:1));
 
-	#ifdef VERBOSE
 	if (error == 0) {
 		printf("Inizio trasferimento di %s (%d bytes) in %d blocchi verso %s:%d.\n",
 			   new_transfer->filepath, filesize, chunks, paddr, ntohs(addr->sin_port));
 	}
-	#endif
 
 	while(done < chunks && error == 0) {
 		if (done == chunks-1) // Se il prossimo e' l'ultimo blocco
@@ -87,9 +79,7 @@ void* handle_transfer(void* args) {
 		// Se ho inviato tutto il pacchetto data_packet
 		if(sendto(server_socket, data_packet, DATA_HEADER_LEN+next_size, 0,
 			   new_transfer->addr, sizeof(struct sockaddr)) == DATA_HEADER_LEN+next_size) {			
-			#ifdef VERBOSE
 			printf("Inviato blocco %d a %s:%d\n", done, paddr, ntohs(addr->sin_port));
-			#endif
 			done++;
 			// Sospendo il thread in attesa che arrivi l'ack appropriato
 			pthread_cond_wait(&new_transfer->acked, &new_transfer->mutex);
@@ -97,16 +87,12 @@ void* handle_transfer(void* args) {
 	}
 
 	if (error == 0) {
-		#ifdef VERBOSE
 		printf("Trasferimento di %s verso %s:%d completato.\n",
 			   new_transfer->filepath, paddr, ntohs(addr->sin_port));
-		#endif
 	} else { // In caso di errore next_size contiene la dimens. del messaggio
-		#ifdef VERBOSE
 		printf("Si è verificato un errore durante il trasferimento di %s verso "
 			   "%s:%d\n",
 			   new_transfer->filepath, paddr, ntohs(addr->sin_port));
-		#endif
 		sendto(server_socket, error_packet, ERROR_HEADER_LEN+next_size, 0,
 			   new_transfer->addr, sizeof(struct sockaddr));
 	}
@@ -132,9 +118,7 @@ int main(int argc, char** argv) {
 	char buffer[MAX_REQ_LEN];
 	struct transfer* new_transfer;
 	pthread_t thread;
-	#ifdef VERBOSE
 	char paddr[INET_ADDRSTRLEN];
-	#endif
 
 	// Associo il gestore del segnale kill
 	signal(SIGKILL, handle_kill);
@@ -154,10 +138,8 @@ int main(int argc, char** argv) {
 		directory = argv[2];
 	}
 
-	#ifdef VERBOSE
-		printf("TFTP Directory: %s\n", directory);
-		printf("TFTP Port: %d\n", port);
-	#endif
+	printf("TFTP Directory: %s\n", directory);
+	printf("TFTP Port: %d\n", port);
 
 	// Inizializza struttura indirizzo server
 	memset(&server_addr, 0, sizeof(struct sockaddr_in));
@@ -196,11 +178,9 @@ int main(int argc, char** argv) {
 
 			new_transfer = create_transfer(id_counter++, (struct sockaddr*)&client_addr, filepath, mode);
 			
-			#ifdef VERBOSE
 			inet_ntop(AF_INET, &client_addr.sin_addr, paddr, INET_ADDRSTRLEN);
 			printf("Ricevuta richiesta di download per %s in modalità %s da %s:%d \n",
 				   filepath, get_filemode(buffer), paddr, ntohs(client_addr.sin_port));
-			#endif
 			// Libero le stringhe che non servono più
 			free(filename);
 			free(filepath);
@@ -235,10 +215,8 @@ int main(int argc, char** argv) {
 			pthread_cond_signal(&new_transfer->acked); // Risveglio il thread
 			pthread_mutex_unlock(&new_transfer->mutex);
 		} else { // Messaggio in nessun formato accettabile
-			#ifdef VERBOSE
 			printf("Non gestito pacchetto con opcode %d.\n",
 				   get_opcode(buffer));
-			#endif
 		}
 	}
 

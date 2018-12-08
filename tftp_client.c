@@ -57,10 +57,8 @@ int main(int argc, char** argv) {
 		server_ip = argv[1];
 	}
 
-	#ifdef VERBOSE
 	printf("Indirizzo Server: %s\n", server_ip);
 	printf("Porta Server: %d\n", server_port);
-	#endif
 
 	// filemode a BIN di default
 	filemode = malloc(10);
