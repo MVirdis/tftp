@@ -100,12 +100,12 @@ void set_filemode(char* buff, char* filemode) {
 	strcpy(buff+i, filemode);
 }
 
-char* get_data(char* buff) {
+char* get_data(char* buff, int size) {
 	char* data;
 	if (buff == NULL) return NULL;
 	if (get_opcode(buff) != DATA) return NULL;
-	data = malloc(strlen(buff + DATA_HEADER_LEN) + 1);
-	strcpy(data, buff + DATA_HEADER_LEN);
+	data = malloc(size-DATA_HEADER_LEN);
+	memcpy(data, buff + DATA_HEADER_LEN, size-DATA_HEADER_LEN);
 	return data;
 }
 

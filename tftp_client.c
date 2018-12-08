@@ -165,10 +165,9 @@ int main(int argc, char** argv) {
 					}
 					break;
 				} else if (get_opcode(buffer) == DATA) {
-					data = get_data(buffer);
+					data = get_data(buffer, received);
 					if (strcmp(filemode, TEXT_MODE) == 0) mode = TEXT;
-					else mode = BIN;
-					// |DATA_HEADER|      DATA      |\0|					
+					else mode = BIN;				
 					block = get_blocknumber(buffer);
 					// Se si tratta del primo blocco stampo
 					if (block == 0)

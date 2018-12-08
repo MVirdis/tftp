@@ -30,7 +30,7 @@ void set_filename(char* buff, char* filename);
 void set_filemode(char* buff, char* filemode);
 int get_blocknumber(char* buff);
 void set_blocknumber(char* buff, int num);
-char* get_data(char* buff);
+char* get_data(char* buff, int size);
 void set_data(char* buff, char* data, int size);
 int get_errornumber(char* buff);
 void set_errornumber(char* buff, int num);
