@@ -140,6 +140,10 @@ int main(int argc, char** argv) {
 
 	// Socket UDP del server
 	server_socket = socket(AF_INET, SOCK_DGRAM, 0);
+	if (server_socket == -1) {
+		printf("Errore: impossibile ottenere un socket dal sistema\n");
+		return 0;
+	}
 
 	// Associo l'indirizzo e la porta al socket
 	exit_status = bind(server_socket, (struct sockaddr*) &server_addr, sizeof(struct sockaddr_in));
