@@ -212,6 +212,7 @@ int main(int argc, char** argv) {
 		} else { // Messaggio in nessun formato accettabile
 			printf("Non gestito pacchetto con opcode %d.\n",
 				   get_opcode(buffer));
+			send_error((struct sockaddr*)&client_addr, ILLEGAL_TFTP_OP, "Illegal tftp operation");
 		}
 	}
 
