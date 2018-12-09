@@ -63,6 +63,7 @@ int main(int argc, char** argv) {
 	// filemode a BIN di default
 	filemode = malloc(10);
 	strcpy(filemode, BIN_MODE);
+	mode = BIN;
 
 	// Inizializza indirizzo server
 	memset(&server_addr, 0, sizeof server_addr);
@@ -113,9 +114,11 @@ int main(int argc, char** argv) {
 			if (strcmp(tok, "txt") == 0) {
 				printf("Modo di trasferimento testuale configurato\n");
 				strcpy(filemode, TEXT_MODE);
+				mode = TEXT;
 			} else if (strcmp(tok, "bin") == 0) {
 				printf("Modo di trasferimento binario configurato\n");
 				strcpy(filemode, BIN_MODE);
+				mode = BIN;
 			} else {
 				printf("Formato dell'istruzione mode errato\n");
 				printf("Utilizzo !mode {txt|bin}\n");
@@ -163,14 +166,12 @@ int main(int argc, char** argv) {
 					}
 					break;
 				} else if (get_opcode(buffer) == DATA) {
-					data = get_data(buffer, received);
-					if (strcmp(filemode, TEXT_MODE) == 0) mode = TEXT;
-					else mode = BIN;				
+					data = get_data(buffer, received);				
 					block = get_blocknumber(buffer);
 					// Se si tratta del primo blocco stampo
 					if (block == 0)
 						printf("Trasferimento file in corso.\n");
-					printf("\rTrasferimento blocco %d", block);
+					printf("Trasferimento blocco %d\n", block);
 					// tok punta al nome locale del file
 					append_file_chunk(data, tok, received-DATA_HEADER_LEN, mode);
 					free(data);
@@ -180,7 +181,7 @@ int main(int argc, char** argv) {
 					send(sock, buffer, ACK_LEN, 0); // Invio l'ack
 					// Se il campo data e' piu' piccolo di un blocco allora era l'ultimo
 					if (received-DATA_HEADER_LEN < CHUNK_SIZE) {
-						printf("\nTrasferimento completato (%d/%d blocchi)\n", block+1, block+1);
+						printf("Trasferimento completato (%d/%d blocchi)\n", block+1, block+1);
 						printf("Salvataggio %s completato\n", tok);
 						break;
 					}
