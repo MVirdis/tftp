@@ -43,6 +43,7 @@ int main(int argc, char** argv) {
 	int error_number;
 	int mode;
 	int block;
+	int received_block;
 	int exit_status;
 	
 	// Controllo parametri client
@@ -152,7 +153,7 @@ int main(int argc, char** argv) {
 			filename = get_filename(req_packet);
 			printf("Richiesta file %s al server in corso.\n", filename);
 			free(filename);
-			block = -1;
+			block = received_block = -1;
 			// Ricevo un pacchetto di risposta alla richiesta
 			while(1) {
 				// La lunghezza del pacchetto che arriva sara' max(MAX_ERROR_LEN, ACK_LEN)
@@ -166,12 +167,17 @@ int main(int argc, char** argv) {
 					}
 					break;
 				} else if (get_opcode(buffer) == DATA) {
-					data = get_data(buffer, received);				
-					block = get_blocknumber(buffer);
+					received_block = get_blocknumber(buffer);
+					if (received_block == block + 1)
+						block = received_block;
+					else
+						continue;
 					// Se si tratta del primo blocco stampo
 					if (block == 0)
 						printf("Trasferimento file in corso.\n");
-					printf("Trasferimento blocco %d\n", block);
+					printf("\rTrasferimento blocco %d", block);
+					fflush(stdout); // Forza la stampa precedente
+					data = get_data(buffer, received);
 					// tok punta al nome locale del file
 					append_file_chunk(data, tok, received-DATA_HEADER_LEN, mode);
 					free(data);
@@ -181,7 +187,7 @@ int main(int argc, char** argv) {
 					send(sock, buffer, ACK_LEN, 0); // Invio l'ack
 					// Se il campo data e' piu' piccolo di un blocco allora era l'ultimo
 					if (received-DATA_HEADER_LEN < CHUNK_SIZE) {
-						printf("Trasferimento completato (%d/%d blocchi)\n", block+1, block+1);
+						printf("\nTrasferimento completato (%d/%d blocchi)\n", block+1, block+1);
 						printf("Salvataggio %s completato\n", tok);
 						break;
 					}
