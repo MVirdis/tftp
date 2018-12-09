@@ -14,16 +14,30 @@
 int server_socket;
 transfer_list_t active_transfers;
 
+void send_error(struct sockaddr* addr, int error_num, char* msg) {
+	if (addr == NULL || msg == NULL) return;
+	char* error_packet;
+	int size = ERROR_HEADER_LEN + strlen(msg) + 1;
+
+	error_packet = malloc(size);
+
+	set_opcode(error_packet, ERROR);
+	set_errornumber(error_packet, error_num);
+	set_errormessage(error_packet, msg);
+
+	sendto(server_socket, error_packet, size, 0, addr, sizeof(struct sockaddr));
+
+	free(error_packet);
+}
+
 void* handle_transfer(void* args) {
 	struct transfer* new_transfer = (struct transfer*) args;
 	char data_packet[MAX_DATA_LEN];
-	char error_packet[MAX_ERROR_LEN];
 	char file_chunk[CHUNK_SIZE];
 	int chunks;
 	int filesize;
 	int done=0;
 	int next_size=0;
-	int error = 0;
 	char paddr[INET_ADDRSTRLEN];
 	struct sockaddr_in* addr;
 
@@ -33,26 +47,19 @@ void* handle_transfer(void* args) {
 	addr = (struct sockaddr_in*)new_transfer->addr;
 	inet_ntop(AF_INET, &addr->sin_addr, paddr, INET_ADDRSTRLEN);
 
-	// Preparo l'opcode di errore
-	set_opcode(error_packet, ERROR);
-
 	if ((filesize = get_file_size(new_transfer->filepath)) == -1) {
 		printf("Errore file not found.\n");
-		set_errornumber(error_packet, FILE_NOT_FOUND);
-		set_errormessage(error_packet, "File not found.");
-		next_size = 16;
-		error = 1;
+		send_error(new_transfer->addr, FILE_NOT_FOUND, "File not found");
+		goto end_transfer;
 	}
 
 	// Calcolo del numero di blocchi
 	chunks = (int) (filesize/CHUNK_SIZE + (filesize%CHUNK_SIZE == 0? 0:1));
 
-	if (error == 0) {
-		printf("Inizio trasferimento di %s (%d bytes) in %d blocchi verso %s:%d.\n",
-			   new_transfer->filepath, filesize, chunks, paddr, ntohs(addr->sin_port));
-	}
+	printf("Inizio trasferimento di %s (%d bytes) in %d blocchi verso %s:%d.\n",
+		   new_transfer->filepath, filesize, chunks, paddr, ntohs(addr->sin_port));
 
-	while(done < chunks && error == 0) {
+	while(done < chunks) {
 		if (done == chunks-1) // Se il prossimo e' l'ultimo blocco
 			next_size = filesize - done*CHUNK_SIZE;
 		else
@@ -63,11 +70,10 @@ void* handle_transfer(void* args) {
 		set_blocknumber(data_packet, done);
 		if ((get_file_chunk(file_chunk, new_transfer->filepath,
 							done*CHUNK_SIZE, next_size, new_transfer->filemode)) == -1) {
-			set_errornumber(error_packet, FILE_NOT_FOUND);
-			set_errormessage(error_packet, "File not found.");
-			next_size = 16;
-			error = 1;
-			break;
+			printf("Si è verificato un errore durante la lettura del file %s\n",
+					new_transfer->filepath);
+			send_error(new_transfer->addr, FILE_NOT_FOUND, "File not found");
+			goto end_transfer;
 		}
 		set_data(data_packet, file_chunk, next_size);
 
@@ -81,17 +87,10 @@ void* handle_transfer(void* args) {
 		}
 	}
 
-	if (error == 0) {
-		printf("Trasferimento di %s verso %s:%d completato.\n",
-			   new_transfer->filepath, paddr, ntohs(addr->sin_port));
-	} else { // In caso di errore next_size contiene la dimens. del messaggio
-		printf("Si è verificato un errore durante il trasferimento di %s verso "
-			   "%s:%d\n",
-			   new_transfer->filepath, paddr, ntohs(addr->sin_port));
-		sendto(server_socket, error_packet, ERROR_HEADER_LEN+next_size, 0,
-			   new_transfer->addr, sizeof(struct sockaddr));
-	}
+	printf("Trasferimento di %s verso %s:%d completato.\n",
+		   new_transfer->filepath, paddr, ntohs(addr->sin_port));
 
+end_transfer:
 	pthread_mutex_unlock(&new_transfer->mutex);
 	remove_transfer(&active_transfers, new_transfer);
 
