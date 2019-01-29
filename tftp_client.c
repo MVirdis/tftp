@@ -96,17 +96,17 @@ int main(int argc, char** argv) {
 		// Rimuovo il carattere \n finale
 		command[strlen(command)-1] = '\0';
 
-		if (strlen(command) == 0) {
+		if (strlen(command) == 0) { // Se il comando è stringa vuota
 			printf(GENERIC_ERROR_MSG);
 			continue;
 		}
 
-		// Prelevo il primo token
+		// Prelevo il primo token che rappresenta il comando (e.g. !help)
 		tok = strtok(command, " ");
 		if (strcmp(tok, HELP) == 0) {
 			print_menu();
 		} else if (strcmp(tok, MODE) == 0) {
-			tok = strtok(NULL, " ");
+			tok = strtok(NULL, " "); // Prelevo il primo argomento di mode
 			if (tok == NULL) {
 				printf("Formato dell'istruzione mode errato\n");
 				printf("Utilizzo !mode {txt|bin}\n");
@@ -128,9 +128,8 @@ int main(int argc, char** argv) {
 			if (filemode != NULL) free(filemode);
 			break;
 		} else if (strcmp(tok, GET) == 0) {
-			set_opcode(req_packet, RRQ);
-			// Prelevo il filename
-			tok = strtok(NULL, " ");
+			set_opcode(req_packet, RRQ); // Inizializzo un pacchetto di richiesta
+			tok = strtok(NULL, " "); // Prelevo il filename
 			if (tok == NULL) {
 				printf("Formato dell'istruzione get errato\n");
 				printf("Utilizzo !get filename nome_locale\n");
@@ -150,15 +149,15 @@ int main(int argc, char** argv) {
 				printf("Non è stato possibile inviare la richiesta\n");
 				continue;
 			}
-			filename = get_filename(req_packet);
+			filename = get_filename(req_packet); // Prelevo il filename per stamparlo
 			printf("Richiesta file %s al server in corso.\n", filename);
 			free(filename);
 			block = received_block = -1;
 			// Ricevo un pacchetto di risposta alla richiesta
 			while(1) {
-				// La lunghezza del pacchetto che arriva sara' max(MAX_ERROR_LEN, ACK_LEN)
-				received = recv(sock, buffer, MAX_ERROR_LEN, 0);
-				if (get_opcode(buffer) == ERROR) {
+				// La lunghezza del pacchetto che arriva sara' max(MAX_ERROR_LEN, MAX_DATA_LEN)
+				received = recv(sock, buffer, MAX_DATA_LEN, 0);
+				if (get_opcode(buffer) == ERROR) { // Se ricevo un pacchetto di errore
 					error_number = get_errornumber(buffer);
 					if (error_number == FILE_NOT_FOUND) {
 						printf("File non trovato.\n");
@@ -166,19 +165,20 @@ int main(int argc, char** argv) {
 						printf("Operazione tftp non valida.\n");
 					}
 					break;
-				} else if (get_opcode(buffer) == DATA) {
+				} else if (get_opcode(buffer) == DATA) { // Se ricevo un pacchetto dati
 					received_block = get_blocknumber(buffer);
+					// Controllo di aver ricevuto il blocco che mi aspettavo
 					if (received_block == block + 1)
 						block = received_block;
 					else
-						continue;
+						continue; // Se arriva un blocco che non mi aspetto lo ignoro
 					// Se si tratta del primo blocco stampo
 					if (block == 0)
 						printf("Trasferimento file in corso.\n");
 					printf("\rTrasferimento blocco %d", block);
-					fflush(stdout); // Forza la stampa precedente
+					fflush(stdout); // Forza la stampa precedente che verrebbe bufferizzata
 					data = get_data(buffer, received);
-					// tok punta al nome locale del file
+					// tok punta ancora al nome locale del file
 					append_file_chunk(data, tok, received-DATA_HEADER_LEN, mode);
 					free(data);
 					// Preparo il pacchetto di ack
@@ -191,8 +191,8 @@ int main(int argc, char** argv) {
 						printf("Salvataggio %s completato\n", tok);
 						break;
 					}
-				} else {
-					printf("Opcode errato\n");
+				} else { // Se ricevo un pacchetto con opcode non gestito o errato
+					printf("Opcode %d errato\n", get_opcode(buffer));
 					break;
 				}
 			}
