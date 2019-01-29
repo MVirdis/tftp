@@ -11,31 +11,28 @@ int get_file_size(char* filepath) {
 }
 
 int get_file_chunk(char* buff, char* filepath, int offset, int size, int mode) {
-	FILE* stream;
-	int i;
+	FILE* stream = NULL;
 	if (filepath == NULL || buff == NULL) return -1;
-	if ((stream = fopen(filepath, "r")) == NULL) return -1;
-	fseek(stream, offset, SEEK_SET);
-	if (mode == BIN)
-		fread(buff, size, 1, stream);
+	if (mode == BIN)	
+		stream = fopen(filepath, "rb");
 	else if (mode == TEXT)
-		for(i=0; i<size; ++i)
-			buff[i] = (char) fgetc(stream);
+		stream = fopen(filepath, "r");
+	if (stream == NULL) return -1;
+	fseek(stream, offset, SEEK_SET);
+	fread(buff, size, 1, stream);
 	fclose(stream);
 	return 0;
 }
 
 int append_file_chunk(char* data, char* filepath, int size, int mode) {
-	FILE* stream;
-	int i;
+	FILE* stream = NULL;
 	if (data == NULL || filepath == NULL) return -1;
-	if ((size <= 0 && mode == BIN) || (mode != BIN && mode != TEXT)) return -1;
-	stream = fopen(filepath, "a");
 	if (mode == BIN)
-		fwrite(data, size, 1, stream);
+		stream = fopen(filepath, "ab");
 	else if (mode == TEXT)
-		for(i=0; i<size; ++i)
-			fprintf(stream, "%c", data[i]);
+		stream = fopen(filepath, "a");
+	if (stream == NULL) return -1;
+	fwrite(data, size, 1, stream);
 	fclose(stream);
 	return 0;
 }
