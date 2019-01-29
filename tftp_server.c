@@ -14,6 +14,7 @@
 int server_socket;
 transfer_list_t active_transfers;
 
+// Invia un pacchetto di errore ad addr con i campi specificati
 void send_error(struct sockaddr* addr, int error_num, char* msg) {
 	if (addr == NULL || msg == NULL) return;
 	char* error_packet;
@@ -36,16 +37,17 @@ void* handle_transfer(void* args) {
 	char file_chunk[CHUNK_SIZE];
 	int chunks;
 	int filesize;
-	int done=0;
-	int next_size=0;
+	int done = 0;
+	int next_size = 0;
 	char paddr[INET_ADDRSTRLEN];
 	struct sockaddr_in* addr;
+	pthread_mutex_t tmp_mutex;
 
 	// Mutua esclusione su new_transfer
 	pthread_mutex_lock(&new_transfer->mutex);
 
 	addr = (struct sockaddr_in*)new_transfer->addr;
-	inet_ntop(AF_INET, &addr->sin_addr, paddr, INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &addr->sin_addr, paddr, INET_ADDRSTRLEN); // paddr indirizzo printable
 
 	if ((filesize = get_file_size(new_transfer->filepath)) == -1) {
 		printf("Errore file not found.\n");
@@ -54,7 +56,8 @@ void* handle_transfer(void* args) {
 	}
 
 	// Calcolo del numero di blocchi
-	chunks = (int) (filesize/CHUNK_SIZE + (filesize%CHUNK_SIZE == 0? 0:1));
+	chunks = (int) (filesize/CHUNK_SIZE + 1);
+	// il +1 copre anche il caso di file con dim. multipla di CHUNKSIZE
 
 	printf("Inizio trasferimento di %s (%d bytes) in %d blocchi verso %s:%d.\n",
 		   new_transfer->filepath, filesize, chunks, paddr, ntohs(addr->sin_port));
@@ -70,7 +73,7 @@ void* handle_transfer(void* args) {
 		set_blocknumber(data_packet, done);
 		if ((get_file_chunk(file_chunk, new_transfer->filepath,
 							done*CHUNK_SIZE, next_size, new_transfer->filemode)) == -1) {
-			printf("Si è verificato un errore durante la lettura del file %s\n",
+			printf("\nSi è verificato un errore durante la lettura del file %s\n",
 					new_transfer->filepath);
 			send_error(new_transfer->addr, FILE_NOT_FOUND, "File not found");
 			goto end_transfer;
@@ -80,19 +83,20 @@ void* handle_transfer(void* args) {
 		// Se ho inviato tutto il pacchetto data_packet
 		if(sendto(server_socket, data_packet, DATA_HEADER_LEN+next_size, 0,
 			   new_transfer->addr, sizeof(struct sockaddr)) == DATA_HEADER_LEN+next_size) {			
-			printf("Inviato blocco %d a %s:%d\n", done, paddr, ntohs(addr->sin_port));
+			printf("\rInviato blocco %d a %s:%d", done, paddr, ntohs(addr->sin_port));
 			done++;
 			// Sospendo il thread in attesa che arrivi l'ack appropriato
 			pthread_cond_wait(&new_transfer->acked, &new_transfer->mutex);
 		}
 	}
 
-	printf("Trasferimento di %s verso %s:%d completato.\n",
+	printf("\nTrasferimento di %s verso %s:%d completato.\n",
 		   new_transfer->filepath, paddr, ntohs(addr->sin_port));
 
 end_transfer:
-	pthread_mutex_unlock(&new_transfer->mutex);
+	tmp_mutex = new_transfer->mutex;
 	remove_transfer(&active_transfers, new_transfer);
+	pthread_mutex_unlock(&tmp_mutex);
 
 	pthread_exit(NULL);
 }
@@ -159,19 +163,20 @@ int main(int argc, char** argv) {
 		client_addr_len = sizeof(struct sockaddr_in);
 		recvfrom(server_socket, buffer, MAX_REQ_LEN, 0,
 				 (struct sockaddr*)&client_addr, &client_addr_len);
-		if (get_opcode(buffer) == RRQ) {
+		if (get_opcode(buffer) == RRQ) { // Se ho ricevuto una richiesta
 			// Aggiungo un nuovo utente alla lista
-			filename = get_filename(buffer);
+			filename = get_filename(buffer); // e.g. testo.txt
 			filepath = malloc(strlen(directory) + strlen(filename) +1);
 			strcpy(filepath, directory);
-			strcat(filepath, filename);
+			strcat(filepath, filename); // filepath sarà file_dir/testo.txt
 
 			if (strcmp(get_filemode(buffer), TEXT_MODE) == 0)
 				mode = TEXT;
 			else
 				mode = BIN;
 
-			new_transfer = create_transfer(id_counter++, (struct sockaddr*)&client_addr, filepath, mode);
+			new_transfer = create_transfer(id_counter++, (struct sockaddr*)&client_addr, 
+											filepath, mode);
 			
 			inet_ntop(AF_INET, &client_addr.sin_addr, paddr, INET_ADDRSTRLEN);
 			printf("Ricevuta richiesta di download per %s in modalità %s da %s:%d \n",
@@ -192,22 +197,16 @@ int main(int argc, char** argv) {
 				id_counter--;
 				continue;
 			}
-		} else if (get_opcode(buffer) == ACK) {
+		} else if (get_opcode(buffer) == ACK) { // Ricevo un ack
 			// Risveglio il thread che sta gestendo il mittente dell'ack
 			new_transfer = get_transfer_byaddr(active_transfers, &client_addr);
-
 			// Transfer non trovato puo' capitare se arriva un ack dopo che
 			// il trasferimento si e' chiuso con errore
 			if (new_transfer == NULL)
 				continue;
-
 			// Mutua esclusione sulla struttura new_transfer
-			pthread_mutex_lock(&new_transfer->mutex);
-			// Nel frattempo il transfer potrebbe essere stato rimosso dalla lista
-			new_transfer = get_transfer_byaddr(active_transfers, &client_addr);
-			if (new_transfer == NULL)
-				continue;
-			pthread_cond_signal(&new_transfer->acked); // Risveglio il thread
+			pthread_mutex_lock(&new_transfer->mutex);			
+			pthread_cond_signal(&new_transfer->acked); // Risveglio il thread (suppongo un solo thread per transfer)
 			pthread_mutex_unlock(&new_transfer->mutex);
 		} else { // Messaggio in nessun formato accettabile
 			printf("Non gestito pacchetto con opcode %d.\n",
